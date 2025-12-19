@@ -1,5 +1,6 @@
 import { z } from "genkit";
 import { ai, model } from "../genkit";
+import * as fs from "fs";
 import {
   navigateTo,
   scrollPage,
@@ -28,7 +29,7 @@ export const navigateTool = ai.defineTool(
       return `Failed to navigate: ${(e as Error).message}`;
     }
   },
-  );
+);
 
 export const scrollTool = ai.defineTool(
   {
@@ -47,12 +48,13 @@ export const scrollTool = ai.defineTool(
       return `Failed to scroll: ${(e as Error).message}`;
     }
   },
-  );
+);
 
 export const clickElementTool = ai.defineTool(
   {
     name: "clickElement",
-    description: "Clicks on an element using its ID from the visual labels (Set-of-Mark).",
+    description:
+      "Clicks on an element using its ID from the visual labels (Set-of-Mark).",
     inputSchema: z.object({ id: z.number() }),
     outputSchema: z.string(),
   },
@@ -64,12 +66,13 @@ export const clickElementTool = ai.defineTool(
       return `Failed to click element #${id}: ${(e as Error).message}`;
     }
   },
-  );
+);
 
 export const typeElementTool = ai.defineTool(
   {
     name: "typeElement",
-    description: "Types text into a specific element using its ID from the visual labels.",
+    description:
+      "Types text into a specific element using its ID from the visual labels.",
     inputSchema: z.object({ id: z.number(), text: z.string() }),
     outputSchema: z.string(),
   },
@@ -81,7 +84,7 @@ export const typeElementTool = ai.defineTool(
       return `Failed to type into element #${id}: ${(e as Error).message}`;
     }
   },
-  );
+);
 
 export const pressKeyTool = ai.defineTool(
   {
@@ -98,9 +101,15 @@ export const pressKeyTool = ai.defineTool(
       return `Failed to press key: ${(e as Error).message}`;
     }
   },
-  );
+);
 
-const ALL_TOOLS = [navigateTool, scrollTool, clickElementTool, typeElementTool, pressKeyTool];
+const ALL_TOOLS = [
+  navigateTool,
+  scrollTool,
+  clickElementTool,
+  typeElementTool,
+  pressKeyTool,
+];
 
 const TOOLS_MAP: Record<string, any> = {
   navigate: navigateTool,
@@ -159,6 +168,7 @@ export const qaAgentFlow = ai.defineFlow(
       
       You will receive screenshots of the page after every action.
       In the screenshots, INTERACTIVE ELEMENTS ARE LABELED WITH RED NUMBERS (IDs).
+      You also receive a JSON list of labeled elements. Use it to verify the text content of the buttons/links.
       
       Tools available:
       - navigate(url): Go to a website.
@@ -169,7 +179,7 @@ export const qaAgentFlow = ai.defineFlow(
 
       Strategy:
       1. CRITICAL: Always output a THOUGHT first. Identify the element you need to interact with and its ID (e.g., "I need to click the search button, which is labeled #12").
-      2. USE THE LABELS: Do NOT guess coordinates. Look for the red tags on the elements.
+      2. USE THE LABELS: Do NOT guess coordinates. Look for the red tags on the elements or use the text in the JSON list to find the ID.
       3. EXECUTE: Call the appropriate tool with the ID.
       4. NAVIGATE: Copy the URL exactly.
       5. TYPE: Use typeElement(id, text) directly. No need to click first.
@@ -217,7 +227,7 @@ export const qaAgentFlow = ai.defineFlow(
         console.log("Agent is waiting/thinking...");
         await new Promise((resolve) => setTimeout(resolve, 3000));
         // Force loop to continue with new screenshot
-        toolExecuted = true; 
+        toolExecuted = true;
       }
 
       // Execute Tools
@@ -259,8 +269,20 @@ export const qaAgentFlow = ai.defineFlow(
       // Take screenshot and set as next input
       if (toolExecuted) {
         try {
-          await tagElements();
+          const elementList = await tagElements();
           const screenshot = await getScreenshot();
+
+          // DEBUG: Save tagged screenshot
+          try {
+            if (!fs.existsSync("debug")) fs.mkdirSync("debug");
+            fs.writeFileSync(
+              `debug/step_${i}.jpg`,
+              Buffer.from(screenshot, "base64"),
+            );
+          } catch (e) {
+            console.error("Failed to save debug screenshot:", e);
+          }
+
           currentInput = [
             {
               media: {
@@ -269,7 +291,7 @@ export const qaAgentFlow = ai.defineFlow(
               },
             },
             {
-              text: `Screenshot of the current page. \nReference Steps:\n${formattedTask}\n\nCheck the history to see which steps are ALREADY DONE. Execute the NEXT step.`,
+              text: `Screenshot of the current page. \nReference Steps:\n${formattedTask}\n\nInteractive Elements:\n${JSON.stringify(elementList)}\n\nCheck the history to see which steps are ALREADY DONE. Execute the NEXT step.`,
             },
           ];
         } catch (e) {

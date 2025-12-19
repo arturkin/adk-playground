@@ -55,12 +55,45 @@ export async function clickAt(x: number, y: number) {
 
 export async function tagElements() {
   if (!page) throw new Error("Browser not initialized");
-  await page.evaluate(() => {
+  return await page.evaluate(() => {
+    // FORCE SINGLE TAB: Remove target="_blank" from links to keep navigation in the same tab
+    document.querySelectorAll("a[target]").forEach((el) => {
+      if (el.getAttribute("target") === "_blank") {
+        el.setAttribute("target", "_self");
+      }
+    });
+
+    // FORCE SINGLE TAB: Monkey patch window.open
+    if (!(window as any)._junie_open_patched) {
+      window.open = (url) => {
+        if (url) window.location.href = url.toString();
+        return window;
+      };
+      (window as any)._junie_open_patched = true;
+    }
+
     // 1. Clean up old tags if any exist
     document.querySelectorAll(".ai-label").forEach((el) => el.remove());
 
-    // 2. Define interactable elements (expand this list as needed)
-    const selectors = "button, a, input, select, textarea, [role=\"button\"]";
+    // 2. Define interactable elements
+    const selectors = [
+      "button",
+      "a",
+      "p",
+      "input",
+      "select",
+      "textarea",
+      '[role="button"]',
+      '[role="link"]',
+      '[role="menuitem"]',
+      '[role="tab"]',
+      '[role="checkbox"]',
+      '[role="radio"]',
+      "label[for]",
+      "[onclick]",
+      "[class^=ContentDropdown]",
+    ].join(",");
+
     const elements = Array.from(document.querySelectorAll(selectors));
 
     // 3. Filter visible elements only
@@ -69,12 +102,14 @@ export async function tagElements() {
       return (
         rect.width > 0 &&
         rect.height > 0 &&
-        window.getComputedStyle(el).visibility !== "hidden"
+        window.getComputedStyle(el).visibility !== "hidden" &&
+        window.getComputedStyle(el).display !== "none"
       );
     });
 
     // 4. Create tags and store map
     (window as any).aiElementMap = {}; // Global map to store references
+    const elementMetadata: any[] = [];
 
     visibleElements.forEach((el, index) => {
       const rect = el.getBoundingClientRect();
@@ -101,7 +136,24 @@ export async function tagElements() {
         borderRadius: "3px",
       });
       document.body.appendChild(label);
+
+      // Extract Metadata
+      let text =
+        (el as HTMLElement).innerText ||
+        (el as HTMLInputElement).value ||
+        el.getAttribute("aria-label") ||
+        "";
+      text = text.slice(0, 100).replace(/\s+/g, " ").trim();
+
+      elementMetadata.push({
+        id: id,
+        tagName: el.tagName.toLowerCase(),
+        text: text,
+        role: el.getAttribute("role") || undefined,
+      });
     });
+
+    return elementMetadata;
   });
 }
 
