@@ -47,6 +47,19 @@ export function googleGenai(ai: ReturnType<typeof genkit>) {
         for (const c of m.content) {
           if (c.text) {
             parts.push({ text: c.text });
+          } else if (c.media) {
+            const url = c.media.url;
+            if (url && url.startsWith("data:")) {
+              const matches = url.match(/^data:(.*?);base64,(.*)$/);
+              if (matches) {
+                parts.push({
+                  inlineData: {
+                    mimeType: matches[1],
+                    data: matches[2],
+                  },
+                });
+              }
+            }
           } else if (c.toolRequest) {
             toolRefToName.set(c.toolRequest.ref || "", c.toolRequest.name);
             parts.push({

@@ -3,7 +3,7 @@ import path from "path";
 
 interface MemoryEntry {
   role: "user" | "model" | "tool";
-  content: string;
+  content: any;
   timestamp: number;
 }
 
@@ -52,7 +52,7 @@ export class Memory {
     }
   }
 
-  public add(role: "user" | "model" | "tool", content: string) {
+  public add(role: "user" | "model" | "tool", content: any) {
     this.memory.push({ role, content, timestamp: Date.now() });
     this.save();
   }

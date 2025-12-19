@@ -2,10 +2,11 @@ import { z } from "genkit";
 import { ai, model } from "../genkit";
 import {
   navigateTo,
-  findElement,
   scrollPage,
-  clickElement,
-  inputText,
+  clickElementByText,
+  typeText,
+  pressKey,
+  getScreenshot,
 } from "../browser";
 import { memory } from "../memory";
 import { knowledgeRetriever } from "../knowledge";
@@ -50,49 +51,63 @@ export const scrollTool = ai.defineTool(
 export const clickTool = ai.defineTool(
   {
     name: "click",
-    description: "Clicks on an element specified by a CSS selector",
-    inputSchema: z.object({ selector: z.string() }),
+    description: "Clicks on an element containing the specified text",
+    inputSchema: z.object({ text: z.string() }),
     outputSchema: z.string(),
   },
-  async ({ selector }) => {
+  async ({ text }) => {
     try {
-      await clickElement(selector);
-      return `Clicked element: ${selector}`;
+      await clickElementByText(text);
+      return `Clicked element with text: ${text}`;
     } catch (e) {
       return `Failed to click element: ${(e as Error).message}`;
     }
   },
 );
 
-export const inputTool = ai.defineTool(
+export const typeTool = ai.defineTool(
   {
-    name: "input",
-    description: "Inputs text into an element specified by a CSS selector",
-    inputSchema: z.object({ selector: z.string(), text: z.string() }),
+    name: "type",
+    description: "Types text into the currently focused element",
+    inputSchema: z.object({ text: z.string() }),
     outputSchema: z.string(),
   },
-  async ({ selector, text }) => {
+  async ({ text }) => {
     try {
-      await inputText(selector, text);
-      return `Inputted text into ${selector}`;
+      await typeText(text);
+      return `Typed text: ${text}`;
     } catch (e) {
-      return `Failed to input text: ${(e as Error).message}`;
+      return `Failed to type text: ${(e as Error).message}`;
     }
   },
 );
 
-export const findTool = ai.defineTool(
+export const pressKeyTool = ai.defineTool(
   {
-    name: "find",
-    description: "Finds an element on the page using a CSS selector",
-    inputSchema: z.object({ selector: z.string() }),
+    name: "pressKey",
+    description: "Presses a key (e.g., 'Enter', 'Tab', 'Escape')",
+    inputSchema: z.object({ key: z.string() }),
     outputSchema: z.string(),
   },
-  async ({ selector }) => {
-    const el = await findElement(selector);
-    return el ? `Element found: ${selector}` : `Element not found: ${selector}`;
+  async ({ key }) => {
+    try {
+      await pressKey(key);
+      return `Pressed key: ${key}`;
+    } catch (e) {
+      return `Failed to press key: ${(e as Error).message}`;
+    }
   },
 );
+
+const ALL_TOOLS = [navigateTool, scrollTool, clickTool, typeTool, pressKeyTool];
+
+const TOOLS_MAP: Record<string, any> = {
+  navigate: navigateTool,
+  scroll: scrollTool,
+  click: clickTool,
+  type: typeTool,
+  pressKey: pressKeyTool,
+};
 
 // Agent Flow
 export const qaAgentFlow = ai.defineFlow(
@@ -110,50 +125,145 @@ export const qaAgentFlow = ai.defineFlow(
     });
     const context = docs.map((d) => d.text).join("\n");
 
-    // 2. Load Memory
-    const history = memory
-      .getHistory()
-      .map((h) => `${h.role}: ${h.content}`)
-      .join("\n");
+    const steps = task.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+    const formattedTask = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
 
-    // 3. Generate Plan & Execute
-    // We use the model to decide tools to call.
+    // Extract URL hint
+    const urlMatch = task.match(/([a-zA-Z0-9-]+\.)?guidetoiceland\.is/);
+    const urlHint = urlMatch ? `IMPORTANT: The target URL is 'https://${urlMatch[0]}'. Use this EXACT spelling.` : "";
 
-    const prompt = `
+    // 2. Prepare History
+    const historyEntries = memory.getHistory();
+    const history: any[] = historyEntries.map((h) => ({
+      role: h.role,
+      content: h.content,
+    }));
+
+    // Add current task
+    const systemPrompt = `
       You are a QA automation expert.
-      Task: ${task}
+      
+      Your goal is to complete the following test case steps sequentially:
+      ${formattedTask}
+      
+      ${urlHint}
       
       Context from Knowledge Base:
       ${context}
       
-      History:
-      ${history}
+      You will receive screenshots of the page after every action.
+      Use the visual information to decide what to do next.
       
-      Use the available tools to complete the task.
-      If you need to navigate, use navigateTool.
-      If you need to check elements, use findTool.
-      If you need to scroll the page, use scrollTool.
-      If you need to click an element, use clickTool.
-      If you need to input text, use inputTool.
-      IMPORTANT: After navigating, you MUST check for at least one element to verify the page loaded.
+      Tools available:
+      - navigate(url): Go to a website.
+      - click(text): Click an element by its text.
+      - type(text): Type into focused element.
+      - pressKey(key): Press keys like Enter.
+      - scroll(direction): Scroll the page.
+
+      Strategy:
+      1. ANALYZE the current step from the list.
+      2. CHECK the screenshot to see if the element for the step is visible.
+      3. IF visible, execute the action.
+      4. IF NOT visible, scroll or wait.
+      5. ALWAYS output a thought explaining which step you are working on before calling a tool.
+      6. Navigate to the site. COPY THE URL EXACTLY from the first step. Do not correct spelling. If it lacks 'https://', add it. DO NOT ADD 'www'. Remove any trailing punctuation. Common mistake: 'guidetoeiceland' (WRONG). Correct: 'guidetoiceland'.
+      7. Verify page load visually.
+      8. Interact using text on buttons/links.
+      9. If you need to search, click the input (if it has text/placeholder) or just type if focused.
+      10. Do not repeat steps that are already completed.
+      11. If you are on the correct page, proceed to the next action immediately.
     `;
 
-    const response = await ai.generate({
-      model: model.name,
-      prompt: prompt,
-      tools: [navigateTool, findTool, scrollTool, clickTool, inputTool],
-      maxTurns: 20,
-      config: {
-        temperature: 0.1,
-      },
-    });
+    // The current input for the model
+    let currentInput: any = [{ text: systemPrompt }];
 
-    const resultText = response.text;
+    let finalResult = "";
 
-    // Update Memory
+    // Manual Loop
+    for (let i = 0; i < 20; i++) {
+      const response = await ai.generate({
+        model: model.name,
+        history: history,
+        prompt: currentInput,
+        tools: ALL_TOOLS,
+        config: { temperature: 0.1 },
+        returnToolRequests: true,
+      });
+
+      // Add the input we used to history
+      history.push({ role: "user", content: currentInput });
+
+      const responseMessage = response.message;
+      history.push(responseMessage);
+
+      const toolRequests = responseMessage.content.filter(
+        (c: any) => c.toolRequest,
+      );
+
+      if (toolRequests.length === 0) {
+        finalResult = response.text;
+        break;
+      }
+
+      // Execute Tools
+      let toolExecuted = false;
+      for (const part of toolRequests) {
+        const toolReq = part.toolRequest;
+        const tool = TOOLS_MAP[toolReq.name];
+        let output = "Tool not found";
+        if (tool) {
+          try {
+            output = await tool(toolReq.input);
+            toolExecuted = true;
+          } catch (e) {
+            output = (e as Error).message;
+          }
+        }
+
+        // Add tool response to history immediately
+        history.push({
+          role: "tool",
+          content: [
+            {
+              toolResponse: {
+                name: toolReq.name,
+                ref: toolReq.ref,
+                output: output,
+              },
+            },
+          ],
+        });
+      }
+
+      // Take screenshot and set as next input
+      if (toolExecuted) {
+        try {
+          const screenshot = await getScreenshot();
+          currentInput = [
+            {
+              media: {
+                url: `data:image/jpeg;base64,${screenshot}`,
+                contentType: "image/jpeg",
+              },
+            },
+            { text: `Screenshot of the current page. \nReference Steps:\n${formattedTask}\n\nCheck the history to see which steps are ALREADY DONE. Execute the NEXT step.` },
+          ];
+        } catch (e) {
+          currentInput = [
+            { text: "Failed to take screenshot: " + (e as Error).message },
+          ];
+        }
+      } else {
+          // Should not happen if toolRequests > 0
+          break;
+      }
+    }
+
+    // Update Memory (Simplified)
     memory.add("user", task);
-    memory.add("model", resultText);
+    memory.add("model", finalResult);
 
-    return resultText;
+    return finalResult;
   },
 );
