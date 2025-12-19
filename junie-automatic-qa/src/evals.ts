@@ -17,10 +17,26 @@ const dataset: TestCase[] = [
   //     "The agent should navigate to 'https://guidetoiceland.is' and confirm the page or an element on it was found.",
   // },
   {
-    id: "search",
+    id: "search car",
     input: `Go to guidetoiceland.is,
-      Click on 'Choose your perfect Icelandic experience' label Choose 'self drive' in the input dropdown. 
-      DO NOT scroll the page. Press 'Search now' button on the right side of the page, on the top. .
+      DO NOT scroll the page in this test.
+      Click on 'Cars' tab element, choose 'Reykjavik, iceland' from the dropdown list as starting location, also set the same for destination. 
+      Click on a button under "Pick-up details" and in the dropdown choose any dates. 
+      Press 'Search now' button on the right side of the page, on the top. .
+      Wait for search page to load the search results. 
+      Then, select any car from the list, click on it and navigate to car page. 
+      Add car to cart. 
+      Wait for the cart page to load.`,
+    expectedCriteria:
+      "The agent should navigate to 'https://guidetoiceland.is', search for the tours, add single tour to the cart and go to cart page.",
+  },
+  {
+    id: "search tour",
+    input: `Go to guidetoiceland.is,
+      DO NOT scroll the page in this test.
+      Click on 'Choose an experience' element, choose 'self drive' from the dropdown list. 
+      Click on a button under "Select dates" and select date range of 5 days from today. 
+      Press 'Search now' button on the right side of the page, on the top. .
       Wait for search page to load the search results. 
       Then, select any tour from the list, click on it and navigate to tour page. 
       Add tour to cart. 

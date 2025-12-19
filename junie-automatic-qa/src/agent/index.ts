@@ -269,7 +269,7 @@ export const qaAgentFlow = ai.defineFlow(
       // Take screenshot and set as next input
       if (toolExecuted) {
         try {
-          const elementList = await tagElements();
+          const elementList = await tagElements(i);
           const screenshot = await getScreenshot();
 
           // DEBUG: Save tagged screenshot

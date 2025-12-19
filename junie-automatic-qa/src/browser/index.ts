@@ -53,9 +53,9 @@ export async function clickAt(x: number, y: number) {
   await page.mouse.click(x, y);
 }
 
-export async function tagElements() {
+export async function tagElements(renderIndex: number = 0) {
   if (!page) throw new Error("Browser not initialized");
-  return await page.evaluate(() => {
+  return await page.evaluate((renderIndex) => {
     // FORCE SINGLE TAB: Remove target="_blank" from links to keep navigation in the same tab
     document.querySelectorAll("a[target]").forEach((el) => {
       if (el.getAttribute("target") === "_blank") {
@@ -94,7 +94,9 @@ export async function tagElements() {
       '[role="radio"]',
       "label[for]",
       "[onclick]",
-      "[class^=ContentDropdown]",
+      '[id^="react-select"]',
+      "[class^='ContentDropdown']",
+      "[class^='DayPicker-Day']",
     ].join(",");
 
     const elements = Array.from(document.querySelectorAll(selectors));
@@ -143,17 +145,46 @@ export async function tagElements() {
       label.className = "ai-marker";
       label.innerText = id.toString();
 
-      // Determine position
-      // Default: Top-Left, shifted UP (outside)
-      // Fallback: If at very top of page, shift DOWN (inside)
+      // Determine position based on renderIndex (Retry Logic)
+      // 0: Top-Left (Outside Above)
+      // 1: Top-Right (Outside Above)
+      // 2: Bottom-Left (Outside Below)
+      const posMode = renderIndex % 3;
       const labelHeightApprox = 20;
-      const isAtTop = rect.top < labelHeightApprox;
+
+      let left = rect.left + window.scrollX;
+      let top = rect.top + window.scrollY;
+      let transform = "translateY(-100%)"; // Default: Move up
+
+      if (posMode === 0) {
+        // Top-Left Outside
+        // Fallback: If at very top, move inside
+        if (rect.top < labelHeightApprox) {
+          transform = "translateY(0)";
+        }
+      } else if (posMode === 1) {
+        // Top-Right Outside
+        left = rect.right + window.scrollX;
+        // Shift left to align right edge, shift up to be outside
+        transform = "translate(-100%, -100%)";
+        if (rect.top < labelHeightApprox) {
+          transform = "translate(-100%, 0)";
+        }
+      } else if (posMode === 2) {
+        // Bottom-Left Outside
+        top = rect.bottom + window.scrollY;
+        transform = "translateY(0)"; // Already below
+        // Fallback: If at very bottom, move inside (up)
+        if (window.innerHeight - rect.bottom < labelHeightApprox) {
+          transform = "translateY(-100%)";
+        }
+      }
 
       Object.assign(label.style, {
         position: "absolute",
-        left: `${rect.left + window.scrollX}px`,
-        top: `${rect.top + window.scrollY}px`,
-        transform: isAtTop ? "translateY(0)" : "translateY(-100%)",
+        left: `${left}px`,
+        top: `${top}px`,
+        transform: transform,
         zIndex: "9999",
         backgroundColor: "#FF0000",
         color: "#FFFFFF",
@@ -184,7 +215,7 @@ export async function tagElements() {
     });
 
     return elementMetadata;
-  });
+  }, renderIndex);
 }
 
 export async function clickElement(id: number) {
