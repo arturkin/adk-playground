@@ -1,6 +1,12 @@
 import { z } from "genkit";
 import { ai, model } from "../genkit";
-import { navigateTo, findElement, scrollPage } from "../browser";
+import {
+  navigateTo,
+  findElement,
+  scrollPage,
+  clickElement,
+  inputText,
+} from "../browser";
 import { memory } from "../memory";
 import { knowledgeRetriever } from "../knowledge";
 
@@ -37,6 +43,40 @@ export const scrollTool = ai.defineTool(
       return `Scrolled ${direction}`;
     } catch (e) {
       return `Failed to scroll: ${(e as Error).message}`;
+    }
+  },
+);
+
+export const clickTool = ai.defineTool(
+  {
+    name: "click",
+    description: "Clicks on an element specified by a CSS selector",
+    inputSchema: z.object({ selector: z.string() }),
+    outputSchema: z.string(),
+  },
+  async ({ selector }) => {
+    try {
+      await clickElement(selector);
+      return `Clicked element: ${selector}`;
+    } catch (e) {
+      return `Failed to click element: ${(e as Error).message}`;
+    }
+  },
+);
+
+export const inputTool = ai.defineTool(
+  {
+    name: "input",
+    description: "Inputs text into an element specified by a CSS selector",
+    inputSchema: z.object({ selector: z.string(), text: z.string() }),
+    outputSchema: z.string(),
+  },
+  async ({ selector, text }) => {
+    try {
+      await inputText(selector, text);
+      return `Inputted text into ${selector}`;
+    } catch (e) {
+      return `Failed to input text: ${(e as Error).message}`;
     }
   },
 );
@@ -93,14 +133,16 @@ export const qaAgentFlow = ai.defineFlow(
       If you need to navigate, use navigateTool.
       If you need to check elements, use findTool.
       If you need to scroll the page, use scrollTool.
+      If you need to click an element, use clickTool.
+      If you need to input text, use inputTool.
       IMPORTANT: After navigating, you MUST check for at least one element to verify the page loaded.
     `;
 
     const response = await ai.generate({
       model: model.name,
       prompt: prompt,
-      tools: [navigateTool, findTool, scrollTool],
-      maxTurns: 10,
+      tools: [navigateTool, findTool, scrollTool, clickTool, inputTool],
+      maxTurns: 20,
       config: {
         temperature: 0.1,
       },

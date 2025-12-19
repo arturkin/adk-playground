@@ -87,16 +87,22 @@ export function googleGenai(ai: ReturnType<typeof genkit>) {
 
       console.log(`[GoogleGenAI] Generating with model: ${selectedModelName}`);
 
-      const response = await genai.models.generateContent({
-        model: selectedModelName,
-        contents: contents as any,
-        config: {
-          temperature: request.config?.temperature,
-          topK: request.config?.topK,
-          topP: request.config?.topP,
-          tools: tools as any,
-        },
-      });
+      let response;
+      try {
+        response = await genai.models.generateContent({
+          model: selectedModelName,
+          contents: contents as any,
+          config: {
+            temperature: request.config?.temperature,
+            topK: request.config?.topK,
+            topP: request.config?.topP,
+            tools: tools as any,
+          },
+        });
+      } catch (e) {
+        console.error("[GoogleGenAI] Error generating content:", e);
+        throw e;
+      }
 
       const anyResponse = response as any;
       // console.log("GenAI Response:", JSON.stringify(anyResponse, null, 2));
@@ -129,10 +135,19 @@ export function googleGenai(ai: ReturnType<typeof genkit>) {
         }
       }
 
-      console.log(
-        `[GoogleGenAI] Response: ${text.substring(0, 100)}${text.length > 100 ? "..." : ""} | Tools: ${toolRequests.length}`,
-      );
-      // console.log("Parsed ToolRequests:", JSON.stringify(toolRequests, null, 2));
+      console.log(`[GoogleGenAI] Response Text: ${text}`);
+      if (toolRequests.length > 0) {
+        console.log(
+          `[GoogleGenAI] Tool Requests: ${JSON.stringify(
+            toolRequests.map((tr) => ({
+              name: tr.toolRequest.name,
+              input: tr.toolRequest.input,
+            })),
+            null,
+            2,
+          )}`,
+        );
+      }
 
       const content: any[] = [];
       if (text) {

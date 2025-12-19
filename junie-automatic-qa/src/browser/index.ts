@@ -53,3 +53,29 @@ export async function scrollPage(direction: "up" | "down" | "bottom" | "top") {
     else if (dir === "top") window.scrollTo(0, 0);
   }, direction);
 }
+
+export async function clickElement(selector: string) {
+  if (!page) throw new Error("Browser not initialized");
+  try {
+    const element = await page.waitForSelector(selector, { timeout: 5000 });
+    if (!element) throw new Error(`Element not found: ${selector}`);
+    await element.click();
+  } catch (e) {
+    throw new Error(
+      `Failed to click element ${selector}: ${(e as Error).message}`,
+    );
+  }
+}
+
+export async function inputText(selector: string, text: string) {
+  if (!page) throw new Error("Browser not initialized");
+  try {
+    const element = await page.waitForSelector(selector, { timeout: 5000 });
+    if (!element) throw new Error(`Element not found: ${selector}`);
+    await element.type(text);
+  } catch (e) {
+    throw new Error(
+      `Failed to input text into ${selector}: ${(e as Error).message}`,
+    );
+  }
+}

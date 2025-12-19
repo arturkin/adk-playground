@@ -7,20 +7,31 @@ interface MemoryEntry {
   timestamp: number;
 }
 
-const MEMORY_FILE = path.join(process.cwd(), "memory.json");
-const MAX_MEMORY_SIZE = 100; // Keep last 100 messages
+const DEFAULT_MEMORY_FILE = "memory.json";
+const DEFAULT_MAX_MEMORY_SIZE = 100;
 
 export class Memory {
   private memory: MemoryEntry[] = [];
+  private filePath: string;
+  private maxMemorySize: number;
 
-  constructor() {
+  constructor(
+    filePath: string = process.env.MEMORY_FILE || DEFAULT_MEMORY_FILE,
+    maxMemorySize: number = process.env.MAX_MEMORY_SIZE
+      ? parseInt(process.env.MAX_MEMORY_SIZE)
+      : DEFAULT_MAX_MEMORY_SIZE,
+  ) {
+    this.filePath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(process.cwd(), filePath);
+    this.maxMemorySize = maxMemorySize;
     this.load();
   }
 
   private load() {
-    if (fs.existsSync(MEMORY_FILE)) {
+    if (fs.existsSync(this.filePath)) {
       try {
-        const data = fs.readFileSync(MEMORY_FILE, "utf-8");
+        const data = fs.readFileSync(this.filePath, "utf-8");
         this.memory = JSON.parse(data);
       } catch (e) {
         console.error("Failed to load memory", e);
@@ -32,10 +43,10 @@ export class Memory {
   private save() {
     try {
       // Clean up old memory
-      if (this.memory.length > MAX_MEMORY_SIZE) {
-        this.memory = this.memory.slice(-MAX_MEMORY_SIZE);
+      if (this.memory.length > this.maxMemorySize) {
+        this.memory = this.memory.slice(-this.maxMemorySize);
       }
-      fs.writeFileSync(MEMORY_FILE, JSON.stringify(this.memory, null, 2));
+      fs.writeFileSync(this.filePath, JSON.stringify(this.memory, null, 2));
     } catch (e) {
       console.error("Failed to save memory", e);
     }
@@ -53,6 +64,13 @@ export class Memory {
   public clear() {
     this.memory = [];
     this.save();
+  }
+
+  public setFile(filePath: string) {
+    this.filePath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(process.cwd(), filePath);
+    this.load(); // Reload from new file
   }
 }
 

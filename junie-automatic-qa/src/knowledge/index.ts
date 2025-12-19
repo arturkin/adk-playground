@@ -12,6 +12,18 @@ const documents: Document[] = [
     "To test the homepage, navigate to / and check for the body element.",
     { source: "testing_guide" },
   ),
+  Document.fromText(
+    "For 'Self Drive' tours on guidetoiceland.is, look for a link with text 'Self-Drive Tours'. Valid selectors: \"a[href*='self-drive-tour-packages']\", \"a[id*='Self-Drive']\". Do NOT use 'title' attribute.",
+    { source: "selectors" },
+  ),
+  Document.fromText(
+    "To search, look for an input with placeholder 'Search' or name='q'. If a specific section 'Choose your perfect Icelandic experience' is requested, look for elements containing that text using broad checks, or fallback to known footer links for 'Self Drive'.",
+    { source: "selectors" },
+  ),
+  Document.fromText(
+    "When adding to cart, look for buttons with text 'Add to cart' or 'Book now'. Selector: \"button[type='submit']\", \".btn-action\".",
+    { source: "selectors" },
+  ),
 ];
 
 export const knowledgeRetriever = ai.defineRetriever(

@@ -18,7 +18,8 @@ const dataset: TestCase[] = [
   // },
   {
     id: "search",
-    input: `Go to guidetoiceland.is, Choose 'self drive' in 'Choose your perfect Icelandic experience', press search button. 
+    input: `Go to guidetoiceland.is,
+      Click on 'Choose your perfect Icelandic experience' Choose 'self drive' input and choose self drives from dropdown, press search button. 
       Then, select any tour from the list, click on it and navigate to tour page. 
       Add tour to cart. 
       Wait for the cart page to load.`,
@@ -72,7 +73,6 @@ async function evaluateResult(
   return { passed, reason };
 }
 
-
 async function runEvals() {
   if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GOOGLE_API_KEY) {
     console.error(
@@ -84,6 +84,9 @@ async function runEvals() {
   }
 
   console.log("Starting evaluations...");
+
+  // Use a separate memory file for evaluations to avoid wiping production history
+  memory.setFile("memory.test.json");
 
   // Initialize browser
   await launchBrowser();
