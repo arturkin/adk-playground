@@ -73,7 +73,9 @@ export async function tagElements() {
     }
 
     // 1. Clean up old tags if any exist
-    document.querySelectorAll(".ai-label").forEach((el) => el.remove());
+    document
+      .querySelectorAll(".ai-marker, .ai-label")
+      .forEach((el) => el.remove());
 
     // 2. Define interactable elements
     const selectors = [
@@ -87,6 +89,7 @@ export async function tagElements() {
       '[role="link"]',
       '[role="menuitem"]',
       '[role="tab"]',
+      '[role="option"]',
       '[role="checkbox"]',
       '[role="radio"]',
       "label[for]",
@@ -100,8 +103,8 @@ export async function tagElements() {
     const visibleElements = elements.filter((el) => {
       const rect = el.getBoundingClientRect();
       return (
-        rect.width > 0 &&
-        rect.height > 0 &&
+        rect.width > 5 &&
+        rect.height > 5 &&
         window.getComputedStyle(el).visibility !== "hidden" &&
         window.getComputedStyle(el).display !== "none"
       );
@@ -118,22 +121,49 @@ export async function tagElements() {
       // Store reference for clicking later
       (window as any).aiElementMap[id] = el;
 
-      // Create the visual label
+      // --- Create Bounding Box ---
+      const box = document.createElement("div");
+      box.className = "ai-marker";
+      Object.assign(box.style, {
+        position: "absolute",
+        left: `${rect.left + window.scrollX}px`,
+        top: `${rect.top + window.scrollY}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        border: "2px solid #FF0000",
+        backgroundColor: "transparent",
+        zIndex: "9998",
+        pointerEvents: "none",
+        boxSizing: "border-box",
+      });
+      document.body.appendChild(box);
+
+      // --- Create Label ---
       const label = document.createElement("div");
-      label.className = "ai-label";
+      label.className = "ai-marker";
       label.innerText = id.toString();
+
+      // Determine position
+      // Default: Top-Left, shifted UP (outside)
+      // Fallback: If at very top of page, shift DOWN (inside)
+      const labelHeightApprox = 20;
+      const isAtTop = rect.top < labelHeightApprox;
+
       Object.assign(label.style, {
         position: "absolute",
         left: `${rect.left + window.scrollX}px`,
         top: `${rect.top + window.scrollY}px`,
-        zIndex: "10000",
+        transform: isAtTop ? "translateY(0)" : "translateY(-100%)",
+        zIndex: "9999",
         backgroundColor: "#FF0000",
         color: "#FFFFFF",
         padding: "2px 4px",
         fontSize: "12px",
         fontWeight: "bold",
         border: "1px solid white",
-        borderRadius: "3px",
+        borderRadius: "2px",
+        pointerEvents: "none",
+        whiteSpace: "nowrap",
       });
       document.body.appendChild(label);
 

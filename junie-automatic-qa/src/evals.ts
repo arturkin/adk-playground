@@ -19,7 +19,7 @@ const dataset: TestCase[] = [
   {
     id: "search",
     input: `Go to guidetoiceland.is,
-      Click on 'Choose your perfect Icelandic experience' Choose 'self drive' in the input dropdown. 
+      Click on 'Choose your perfect Icelandic experience' label Choose 'self drive' in the input dropdown. 
       DO NOT scroll the page. Press 'Search now' button on the right side of the page, on the top. .
       Wait for search page to load the search results. 
       Then, select any tour from the list, click on it and navigate to tour page. 
