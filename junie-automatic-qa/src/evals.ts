@@ -16,6 +16,13 @@ const dataset: TestCase[] = [
       "The agent should navigate to 'https://guidetoiceland.is' and confirm the page or an element on it was found.",
   },
   {
+    id: "nav_iceland",
+    input:
+      "Go to guidetoiceland.is/book-trips-holiday, scroll down and check if page footer is present and all links are working in the footer",
+    expectedCriteria:
+      "The agent should navigate to 'https://guidetoiceland.is', scroll to the bottom of the page and confirm the page footer is present and all links are opened and pages are working.",
+  },
+  {
     id: "nav_europe",
     input: "Open guidetoeurope.com and find the search bar",
     expectedCriteria:
