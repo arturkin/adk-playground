@@ -3,10 +3,11 @@ import { ai, model } from "../genkit";
 import {
   navigateTo,
   scrollPage,
-  clickElementByText,
-  typeText,
+  clickElement,
+  typeElement,
   pressKey,
   getScreenshot,
+  tagElements,
 } from "../browser";
 import { memory } from "../memory";
 import { knowledgeRetriever } from "../knowledge";
@@ -27,7 +28,7 @@ export const navigateTool = ai.defineTool(
       return `Failed to navigate: ${(e as Error).message}`;
     }
   },
-);
+  );
 
 export const scrollTool = ai.defineTool(
   {
@@ -46,41 +47,41 @@ export const scrollTool = ai.defineTool(
       return `Failed to scroll: ${(e as Error).message}`;
     }
   },
-);
+  );
 
-export const clickTool = ai.defineTool(
+export const clickElementTool = ai.defineTool(
   {
-    name: "click",
-    description: "Clicks on an element containing the specified text",
-    inputSchema: z.object({ text: z.string() }),
+    name: "clickElement",
+    description: "Clicks on an element using its ID from the visual labels (Set-of-Mark).",
+    inputSchema: z.object({ id: z.number() }),
     outputSchema: z.string(),
   },
-  async ({ text }) => {
+  async ({ id }) => {
     try {
-      await clickElementByText(text);
-      return `Clicked element with text: ${text}`;
+      await clickElement(id);
+      return `Clicked element #${id}`;
     } catch (e) {
-      return `Failed to click element: ${(e as Error).message}`;
+      return `Failed to click element #${id}: ${(e as Error).message}`;
     }
   },
-);
+  );
 
-export const typeTool = ai.defineTool(
+export const typeElementTool = ai.defineTool(
   {
-    name: "type",
-    description: "Types text into the currently focused element",
-    inputSchema: z.object({ text: z.string() }),
+    name: "typeElement",
+    description: "Types text into a specific element using its ID from the visual labels.",
+    inputSchema: z.object({ id: z.number(), text: z.string() }),
     outputSchema: z.string(),
   },
-  async ({ text }) => {
+  async ({ id, text }) => {
     try {
-      await typeText(text);
-      return `Typed text: ${text}`;
+      await typeElement(id, text);
+      return `Typed "${text}" into element #${id}`;
     } catch (e) {
-      return `Failed to type text: ${(e as Error).message}`;
+      return `Failed to type into element #${id}: ${(e as Error).message}`;
     }
   },
-);
+  );
 
 export const pressKeyTool = ai.defineTool(
   {
@@ -97,15 +98,15 @@ export const pressKeyTool = ai.defineTool(
       return `Failed to press key: ${(e as Error).message}`;
     }
   },
-);
+  );
 
-const ALL_TOOLS = [navigateTool, scrollTool, clickTool, typeTool, pressKeyTool];
+const ALL_TOOLS = [navigateTool, scrollTool, clickElementTool, typeElementTool, pressKeyTool];
 
 const TOOLS_MAP: Record<string, any> = {
   navigate: navigateTool,
   scroll: scrollTool,
-  click: clickTool,
-  type: typeTool,
+  clickElement: clickElementTool,
+  typeElement: typeElementTool,
   pressKey: pressKeyTool,
 };
 
@@ -125,12 +126,17 @@ export const qaAgentFlow = ai.defineFlow(
     });
     const context = docs.map((d) => d.text).join("\n");
 
-    const steps = task.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-    const formattedTask = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+    const steps = task
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const formattedTask = steps.map((s, i) => `${i + 1}. ${s}`).join("\n");
 
     // Extract URL hint
     const urlMatch = task.match(/([a-zA-Z0-9-]+\.)?guidetoiceland\.is/);
-    const urlHint = urlMatch ? `IMPORTANT: The target URL is 'https://${urlMatch[0]}'. Use this EXACT spelling.` : "";
+    const urlHint = urlMatch
+      ? `IMPORTANT: The target URL is 'https://${urlMatch[0]}'. Use this EXACT spelling.`
+      : "";
 
     // 2. Prepare History
     const historyEntries = memory.getHistory();
@@ -152,27 +158,24 @@ export const qaAgentFlow = ai.defineFlow(
       ${context}
       
       You will receive screenshots of the page after every action.
-      Use the visual information to decide what to do next.
+      In the screenshots, INTERACTIVE ELEMENTS ARE LABELED WITH RED NUMBERS (IDs).
       
       Tools available:
       - navigate(url): Go to a website.
-      - click(text): Click an element by its text.
-      - type(text): Type into focused element.
+      - clickElement(id): Click on an element using its numeric label ID.
+      - typeElement(id, text): Type text into an element using its numeric label ID.
       - pressKey(key): Press keys like Enter.
       - scroll(direction): Scroll the page.
 
       Strategy:
-      1. ANALYZE the current step from the list.
-      2. CHECK the screenshot to see if the element for the step is visible.
-      3. IF visible, execute the action.
-      4. IF NOT visible, scroll or wait.
-      5. ALWAYS output a thought explaining which step you are working on before calling a tool.
-      6. Navigate to the site. COPY THE URL EXACTLY from the first step. Do not correct spelling. If it lacks 'https://', add it. DO NOT ADD 'www'. Remove any trailing punctuation. Common mistake: 'guidetoeiceland' (WRONG). Correct: 'guidetoiceland'.
-      7. Verify page load visually.
-      8. Interact using text on buttons/links.
-      9. If you need to search, click the input (if it has text/placeholder) or just type if focused.
-      10. Do not repeat steps that are already completed.
-      11. If you are on the correct page, proceed to the next action immediately.
+      1. CRITICAL: Always output a THOUGHT first. Identify the element you need to interact with and its ID (e.g., "I need to click the search button, which is labeled #12").
+      2. USE THE LABELS: Do NOT guess coordinates. Look for the red tags on the elements.
+      3. EXECUTE: Call the appropriate tool with the ID.
+      4. NAVIGATE: Copy the URL exactly.
+      5. TYPE: Use typeElement(id, text) directly. No need to click first.
+      6. WAIT: If the page is loading or you just clicked a dropdown, you can just output a thought "Waiting for load" and the loop will continue with a new screenshot.
+      7. DROPDOWNS: When you click a dropdown, wait for the next screenshot to see the options. Do NOT navigate again.
+      8. FINISH: When ALL steps are completed, output "TASK COMPLETED" and a brief summary. Do NOT call any tools when finished.
     `;
 
     // The current input for the model
@@ -184,7 +187,7 @@ export const qaAgentFlow = ai.defineFlow(
     for (let i = 0; i < 20; i++) {
       const response = await ai.generate({
         model: model.name,
-        history: history,
+        messages: history,
         prompt: currentInput,
         tools: ALL_TOOLS,
         config: { temperature: 0.1 },
@@ -195,21 +198,33 @@ export const qaAgentFlow = ai.defineFlow(
       history.push({ role: "user", content: currentInput });
 
       const responseMessage = response.message;
+      if (!responseMessage) {
+        throw new Error("No message returned from model");
+      }
       history.push(responseMessage);
 
       const toolRequests = responseMessage.content.filter(
         (c: any) => c.toolRequest,
       );
 
+      let toolExecuted = false;
+
       if (toolRequests.length === 0) {
-        finalResult = response.text;
-        break;
+        if (response.text.includes("TASK COMPLETED")) {
+          finalResult = response.text;
+          break;
+        }
+        console.log("Agent is waiting/thinking...");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        // Force loop to continue with new screenshot
+        toolExecuted = true; 
       }
 
       // Execute Tools
-      let toolExecuted = false;
       for (const part of toolRequests) {
         const toolReq = part.toolRequest;
+        if (!toolReq) continue;
+
         const tool = TOOLS_MAP[toolReq.name];
         let output = "Tool not found";
         if (tool) {
@@ -236,9 +251,15 @@ export const qaAgentFlow = ai.defineFlow(
         });
       }
 
+      // WAIT for UI updates/animations
+      if (toolExecuted) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+
       // Take screenshot and set as next input
       if (toolExecuted) {
         try {
+          await tagElements();
           const screenshot = await getScreenshot();
           currentInput = [
             {
@@ -247,7 +268,9 @@ export const qaAgentFlow = ai.defineFlow(
                 contentType: "image/jpeg",
               },
             },
-            { text: `Screenshot of the current page. \nReference Steps:\n${formattedTask}\n\nCheck the history to see which steps are ALREADY DONE. Execute the NEXT step.` },
+            {
+              text: `Screenshot of the current page. \nReference Steps:\n${formattedTask}\n\nCheck the history to see which steps are ALREADY DONE. Execute the NEXT step.`,
+            },
           ];
         } catch (e) {
           currentInput = [
@@ -255,8 +278,8 @@ export const qaAgentFlow = ai.defineFlow(
           ];
         }
       } else {
-          // Should not happen if toolRequests > 0
-          break;
+        // Should not happen if toolRequests > 0
+        break;
       }
     }
 
