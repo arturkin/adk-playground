@@ -7,11 +7,8 @@ interface MemoryEntry {
   timestamp: number;
 }
 
-const MEMORY_FILE = path.join(
-  process.cwd(),
-  "memory.json",
-);
-const MAX_MEMORY_SIZE = 20; // Keep last 20 messages
+const MEMORY_FILE = path.join(process.cwd(), "memory.json");
+const MAX_MEMORY_SIZE = 100; // Keep last 100 messages
 
 export class Memory {
   private memory: MemoryEntry[] = [];

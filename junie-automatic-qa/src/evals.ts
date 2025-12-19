@@ -1,6 +1,7 @@
 import { ai, model } from "./genkit";
 import { launchBrowser, closeBrowser } from "./browser";
 import { qaAgentFlow } from "./agent";
+import { memory } from "./memory";
 
 interface TestCase {
   id: string;
@@ -9,25 +10,34 @@ interface TestCase {
 }
 
 const dataset: TestCase[] = [
+  // {
+  //   id: "nav_iceland",
+  //   input: "Go to guidetoiceland.is and check if the main page loads",
+  //   expectedCriteria:
+  //     "The agent should navigate to 'https://guidetoiceland.is' and confirm the page or an element on it was found.",
+  // },
   {
-    id: "nav_iceland",
-    input: "Go to guidetoiceland.is and check if the main page loads",
+    id: "search",
+    input: `Go to guidetoiceland.is, Choose 'self drive' in 'Choose your perfect Icelandic experience', press search button. 
+      Then, select any tour from the list, click on it and navigate to tour page. 
+      Add tour to cart. 
+      Wait for the cart page to load.`,
     expectedCriteria:
-      "The agent should navigate to 'https://guidetoiceland.is' and confirm the page or an element on it was found.",
+      "The agent should navigate to 'https://guidetoiceland.is', search for the tours, add single tour to the cart and go to cart page.",
   },
-  {
-    id: "nav_iceland",
-    input:
-      "Go to guidetoiceland.is/book-trips-holiday, scroll down and check if page footer is present and all links are working in the footer",
-    expectedCriteria:
-      "The agent should navigate to 'https://guidetoiceland.is', scroll to the bottom of the page and confirm the page footer is present and all links are opened and pages are working.",
-  },
-  {
-    id: "nav_europe",
-    input: "Open guidetoeurope.com and find the search bar",
-    expectedCriteria:
-      "The agent should navigate to 'https://guidetoeurope.com' and attempt to find a search bar selector.",
-  },
+  // {
+  //   id: "nav_iceland_footer",
+  //   input:
+  //     "Go to guidetoiceland.is, scroll down to the bottom and check if page footer is present",
+  //   expectedCriteria:
+  //     "The agent should navigate to 'https://guidetoiceland.is', scroll to the bottom of the page and confirm the page footer is present.",
+  // },
+  // {
+  //   id: "nav_europe",
+  //   input: "Open guidetoeurope.com and find the search bar",
+  //   expectedCriteria:
+  //     "The agent should navigate to 'https://guidetoeurope.com' and attempt to find a search bar selector.",
+  // },
 ];
 
 async function evaluateResult(
@@ -62,6 +72,7 @@ async function evaluateResult(
   return { passed, reason };
 }
 
+
 async function runEvals() {
   if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GOOGLE_API_KEY) {
     console.error(
@@ -83,6 +94,9 @@ async function runEvals() {
     for (const testCase of dataset) {
       console.log(`\nRunning Test Case: ${testCase.id}`);
       console.log(`Input: ${testCase.input}`);
+
+      // Clear memory before each test case
+      memory.clear();
 
       try {
         // Run the agent flow

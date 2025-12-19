@@ -43,3 +43,13 @@ export async function findElement(selector: string) {
     return null;
   }
 }
+
+export async function scrollPage(direction: "up" | "down" | "bottom" | "top") {
+  if (!page) throw new Error("Browser not initialized");
+  await page.evaluate((dir) => {
+    if (dir === "down") window.scrollBy(0, window.innerHeight);
+    else if (dir === "up") window.scrollBy(0, -window.innerHeight);
+    else if (dir === "bottom") window.scrollTo(0, document.body.scrollHeight);
+    else if (dir === "top") window.scrollTo(0, 0);
+  }, direction);
+}

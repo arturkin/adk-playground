@@ -8,11 +8,11 @@ const genai = new GoogleGenAI({
 
 // Model mapping for friendly names
 const MODEL_MAP: Record<string, string> = {
-  "thinking": "gemini-exp-1206",
-  "flash-2.5": "gemini-2.5-flash", 
+  thinking: "gemini-exp-1206",
+  "flash-2.5": "gemini-2.5-flash",
   "pro-latest": "gemini-pro-latest",
   "flash-2.0": "gemini-2.0-flash",
-  "gemini-2.0-flash-thinking-exp": "gemini-exp-1206"
+  "gemini-2.0-flash-thinking-exp": "gemini-exp-1206",
 };
 
 // Get model from env or default
@@ -56,7 +56,8 @@ export function googleGenai(ai: ReturnType<typeof genkit>) {
               },
             });
           } else if (c.toolResponse) {
-            const name = toolRefToName.get(c.toolResponse.ref || "") || "unknown";
+            const name =
+              toolRefToName.get(c.toolResponse.ref || "") || "unknown";
             parts.push({
               functionResponse: {
                 name: name,
@@ -66,7 +67,7 @@ export function googleGenai(ai: ReturnType<typeof genkit>) {
           }
         }
         if (parts.length > 0) {
-            contents.push({ role, parts });
+          contents.push({ role, parts });
         }
       }
 
@@ -115,18 +116,22 @@ export function googleGenai(ai: ReturnType<typeof genkit>) {
                   ref: Math.random().toString(36).substring(7), // Random ref
                   name: part.functionCall.name,
                   input: part.functionCall.args,
-                }
+                },
               });
             }
           }
         }
       } else if (typeof anyResponse.text === "function") {
-         try {
-           text = anyResponse.text();
-         } catch(e) { /* ignore */ }
+        try {
+          text = anyResponse.text();
+        } catch (e) {
+          /* ignore */
+        }
       }
 
-      console.log(`[GoogleGenAI] Response: ${text.substring(0, 100)}${text.length > 100 ? "..." : ""} | Tools: ${toolRequests.length}`);
+      console.log(
+        `[GoogleGenAI] Response: ${text.substring(0, 100)}${text.length > 100 ? "..." : ""} | Tools: ${toolRequests.length}`,
+      );
       // console.log("Parsed ToolRequests:", JSON.stringify(toolRequests, null, 2));
 
       const content: any[] = [];
@@ -134,7 +139,7 @@ export function googleGenai(ai: ReturnType<typeof genkit>) {
         content.push({ text });
       }
       // Add tool requests to content as well
-      toolRequests.forEach(tr => content.push(tr));
+      toolRequests.forEach((tr) => content.push(tr));
 
       return {
         message: {

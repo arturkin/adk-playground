@@ -1,6 +1,6 @@
 import { z } from "genkit";
 import { ai, model } from "../genkit";
-import { navigateTo, findElement } from "../browser";
+import { navigateTo, findElement, scrollPage } from "../browser";
 import { memory } from "../memory";
 import { knowledgeRetriever } from "../knowledge";
 
@@ -18,6 +18,25 @@ export const navigateTool = ai.defineTool(
       return `Navigated to ${url}`;
     } catch (e) {
       return `Failed to navigate: ${(e as Error).message}`;
+    }
+  },
+);
+
+export const scrollTool = ai.defineTool(
+  {
+    name: "scroll",
+    description: "Scrolls the page up, down, to the top, or to the bottom",
+    inputSchema: z.object({
+      direction: z.enum(["up", "down", "top", "bottom"]),
+    }),
+    outputSchema: z.string(),
+  },
+  async ({ direction }) => {
+    try {
+      await scrollPage(direction as "up" | "down" | "top" | "bottom");
+      return `Scrolled ${direction}`;
+    } catch (e) {
+      return `Failed to scroll: ${(e as Error).message}`;
     }
   },
 );
@@ -73,13 +92,15 @@ export const qaAgentFlow = ai.defineFlow(
       Use the available tools to complete the task.
       If you need to navigate, use navigateTool.
       If you need to check elements, use findTool.
+      If you need to scroll the page, use scrollTool.
       IMPORTANT: After navigating, you MUST check for at least one element to verify the page loaded.
     `;
 
     const response = await ai.generate({
       model: model.name,
       prompt: prompt,
-      tools: [navigateTool, findTool],
+      tools: [navigateTool, findTool, scrollTool],
+      maxTurns: 10,
       config: {
         temperature: 0.1,
       },
