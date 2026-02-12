@@ -23,7 +23,7 @@ export class BrowserManager {
   }
 
   public async launch(headless: boolean = true): Promise<{ browser: Browser; page: Page }> {
-    if (this.browser) {
+    if (this.browser && this.browser.isConnected()) {
       // Ensure page matches current viewport if it was changed
       if (this.page) {
         await this.page.setViewport({ width: this.viewport.width, height: this.viewport.height });
@@ -31,12 +31,17 @@ export class BrowserManager {
       return { browser: this.browser, page: this.page! };
     }
 
+    // Clean up disconnected browser
+    if (this.browser && !this.browser.isConnected()) {
+      this.browser = null;
+      this.page = null;
+    }
+
     this.browser = await puppeteer.launch({
       headless: headless,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
-        "--single-process",
         `--window-size=${this.viewport.width},${this.viewport.height}`,
       ],
       defaultViewport: { width: this.viewport.width, height: this.viewport.height },
@@ -47,9 +52,35 @@ export class BrowserManager {
     return { browser: this.browser, page: this.page };
   }
 
+  /**
+   * Returns the currently active page, recovering if the page was closed
+   * (e.g., due to navigation opening a new tab/page).
+   */
+  public async getActivePage(): Promise<Page> {
+    if (!this.browser || !this.browser.isConnected()) {
+      throw new Error("Browser not initialized or disconnected. Call launch() first.");
+    }
+
+    const pages = await this.browser.pages();
+    if (pages.length > 0) {
+      // Use the last page (most recently opened tab)
+      this.page = pages[pages.length - 1];
+      return this.page;
+    }
+
+    // No pages at all — create a new one
+    this.page = await this.browser.newPage();
+    await this.page.setViewport({ width: this.viewport.width, height: this.viewport.height });
+    return this.page;
+  }
+
   public async close(): Promise<void> {
     if (this.browser) {
-      await this.browser.close();
+      try {
+        await this.browser.close();
+      } catch (e) {
+        console.error("Error closing browser:", e);
+      }
       this.browser = null;
       this.page = null;
     }

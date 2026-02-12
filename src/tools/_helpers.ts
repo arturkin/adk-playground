@@ -21,7 +21,7 @@ export async function captureBrowserState(toolContext: ToolContext): Promise<num
 
         // Log current URL and element summary for debugging
         try {
-            const page = getBrowserManager().getPage();
+            const page = await getBrowserManager().getActivePage();
             console.log(`    \x1b[34m[capture]\x1b[0m URL: ${page.url()} | Elements: ${elements.length} | Step: ${stepCount}`);
             // Log a summary of element types
             const tagCounts: Record<string, number> = {};

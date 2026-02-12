@@ -17,7 +17,7 @@
 8. Wait for product page to open
 9. Add tour to cart
 10. Proceed to checkout
-11. Make sure tour is added to cart and checkout is possible
+11. Make sure tour is added to cart and checkout form is displayed
 
 ## Expected Outcome
 Search results page loads with Tour Cards visible.

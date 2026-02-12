@@ -30,7 +30,7 @@ export const clickElementTool = new FunctionTool({
       const elMeta = getElementMeta(toolContext, id);
       await clickElement(id);
       const elementCount = await captureBrowserState(toolContext);
-      const page = getBrowserManager().getPage();
+      const page = await getBrowserManager().getActivePage();
       return {
         status: 'success',
         message: `Clicked element #${id}`,

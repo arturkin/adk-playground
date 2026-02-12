@@ -25,56 +25,56 @@ export async function closeBrowser() {
 }
 
 export async function navigateTo(url: string) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.navigateTo(page, url);
 }
 
 export async function scrollPage(direction: "up" | "down" | "bottom" | "top") {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.scrollPage(page, direction);
 }
 
 export async function clickAt(x: number, y: number) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.clickAt(page, x, y);
 }
 
 export async function hoverElement(id: number) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.hoverElement(page, id);
 }
 
 export async function tagElements(renderIndex: number = 0) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await tagger.tagElements(page, renderIndex);
 }
 
 export async function clearMarkers() {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await tagger.clearMarkers(page);
 }
 
 export async function clickElement(id: number) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.clickElement(page, id);
 }
 
 export async function typeElement(id: number, text: string) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.typeElement(page, id, text);
 }
 
 export async function getScreenshot() {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.getScreenshot(page);
 }
 
 export async function typeText(text: string) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.typeText(page, text);
 }
 
 export async function pressKey(key: string) {
-  const page = getBrowserManager().getPage();
+  const page = await getBrowserManager().getActivePage();
   return await actions.pressKey(page, key);
 }

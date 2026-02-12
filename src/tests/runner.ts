@@ -170,6 +170,10 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       error: (error as Error).message,
     };
   } finally {
+    // Wait for a few seconds if not headless to see the last state
+    if (!config.headless) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
     await browser.close();
   }
 }

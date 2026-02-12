@@ -119,6 +119,7 @@ program
 
     console.log(`Found ${suite.testCases.length} tests. Starting execution...`);
     
+    let exitCode = 0;
     try {
       const latestRun = runStore.getLatestRun();
       const runResult = await runTestSuite(suite, config);
@@ -160,14 +161,14 @@ program
         });
       }
       
-      const exitCode = (runResult.summary.failed > 0 || regressionReport.regressions.length > 0) ? 1 : 0;
-      process.exit(exitCode);
+      exitCode = (runResult.summary.failed > 0 || regressionReport.regressions.length > 0) ? 1 : 0;
     } catch (error) {
       console.error('Test run failed:', error);
-      process.exit(1);
+      exitCode = 1;
     } finally {
       await getBrowserManager().close();
     }
+    process.exit(exitCode);
   });
 
 program.parse();

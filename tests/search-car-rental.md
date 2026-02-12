@@ -17,7 +17,7 @@
 8. Wait for product page to open
 9. Add car to cart
 10. Proceed to checkout
-11. Make sure car is added to cart and checkout is possible
+11. Make sure car is added to cart and checkout form is displayed
 
 ## Expected Outcome
 Search results page loads with Car Rental Cards visible.
