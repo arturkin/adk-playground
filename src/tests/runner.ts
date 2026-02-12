@@ -32,6 +32,17 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
         url_hint: testCase.url,
         expected_criteria: testCase.expectedOutcome,
         current_viewport: testCase.viewport,
+        test_assertions: `You MUST call record_assertion exactly ${testCase.assertions.length} time(s) — one for each assertion:\n` +
+          testCase.assertions.map((a, i) =>
+            `- Assertion ID ${i + 1}: "${a.description}"`
+          ).join('\n'),
+        // Parallel JSON format for the record_assertion tool to look up originals
+        _test_assertions_json: JSON.stringify(
+          testCase.assertions.map((a, i) => ({
+            id: i + 1,
+            description: a.description,
+          }))
+        ),
       }
     });
 
@@ -84,15 +95,47 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
     }
     
     let status: 'passed' | 'failed' | 'inconclusive' | 'error';
-    if (validationResult.toUpperCase().includes('PASS')) {
-      status = 'passed';
-    } else if (validationResult.toUpperCase().includes('FAIL')) {
+    // Signal 1: validation_result text
+    const validationVerdict = validationResult.toUpperCase();
+    const validatorSaysPass = validationVerdict.includes('PASS') && !validationVerdict.includes('FAIL');
+    const validatorSaysFail = validationVerdict.includes('FAIL');
+
+    // Signal 2: recorded assertions
+    const hasAssertions = assertions.length > 0;
+    const allAssertionsPassed = hasAssertions && assertions.every((a: any) => {
+      const original = testCase.assertions[a.id - 1];
+      if (!original) return false;
+      // Allow minor differences in whitespace or case, but otherwise must match
+      return a.passed === true && a.description.trim().toLowerCase() === original.description.trim().toLowerCase();
+    });
+    const anyAssertionFailed = hasAssertions && (
+      assertions.some((a: any) => a.passed === false) || 
+      assertions.length < testCase.assertions.length // Missing assertions count as failed
+    );
+
+    // Signal 3: bugs found (structural safeguard)
+    const hasSeriousBugs = bugs.some((b: BugReport) =>
+      ['critical', 'high', 'medium'].includes(b.severity)
+    );
+
+    // Signal 4: test expects assertions but none were recorded
+    const expectedAssertionCount = testCase.assertions.length;
+    const noAssertionsRecorded = expectedAssertionCount > 0 && assertions.length === 0;
+
+    // Decision logic with structural safeguards
+    if (validatorSaysFail || anyAssertionFailed) {
       status = 'failed';
-    } else if (assertions.length > 0) {
-      // Fallback: use recorded assertions
-      const allPassed = assertions.every((a: any) => a.passed === true);
-      const anyFailed = assertions.some((a: any) => a.passed === false);
-      status = anyFailed ? 'failed' : allPassed ? 'passed' : 'inconclusive';
+    } else if (hasSeriousBugs) {
+      status = 'failed';
+    } else if (noAssertionsRecorded) {
+      // Test expects assertions but validator recorded none - cannot confirm pass
+      status = 'failed';
+    } else if (validatorSaysPass && (!hasAssertions || allAssertionsPassed)) {
+      status = 'passed';
+    } else if (hasAssertions && allAssertionsPassed) {
+      status = 'passed';
+    } else if (!validationResult && !hasAssertions) {
+      status = 'inconclusive';
     } else {
       status = 'inconclusive';
     }
@@ -103,8 +146,10 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       status,
       duration: Date.now() - startTime,
       bugs,
+      assertions,
       screenshots: screenshotFiles,
       agentOutput: finalReport,
+      validationOutput: validationResult,
     };
   } catch (error) {
     console.error(`Test failed with error: ${(error as Error).message}`);
@@ -114,6 +159,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       status: 'error',
       duration: Date.now() - startTime,
       bugs: [],
+      assertions: [],
       screenshots: [],
       agentOutput: '',
       error: (error as Error).message,

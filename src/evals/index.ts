@@ -1,38 +1,64 @@
 import { config } from '../config/index.js';
-import { getEvalDataset } from './dataset.js';
-import { runTestSuite } from '../tests/runner.js';
-import { runStore } from '../memory/run-store.js';
+import { getEvalDataset } from './eval-dataset.js';
+import { runTestCase } from '../tests/runner.js';
+import { parseTestCase } from '../tests/parser.js';
+import { createRunner } from '../agents/index.js';
+import { EvalResult, EvalRunResult } from './eval-types.js';
 
 async function main() {
   console.log('🚀 Starting QA Agent Evaluation...');
   
-  const testCases = await getEvalDataset();
-  if (testCases.length === 0) {
-    console.log('No evaluation test cases found.');
-    process.exit(0);
+  const evalCases = getEvalDataset();
+  const runner = createRunner(config);
+  const runId = `eval-${Date.now()}`;
+
+  const results: EvalResult[] = [];
+
+  for (const ec of evalCases) {
+    console.log(`\nEvaluating: ${ec.testFilePath} (Expected: ${ec.expectedStatus.toUpperCase()})`);
+    try {
+      const testCase = parseTestCase(ec.testFilePath);
+      const result = await runTestCase(testCase, config, runner, runId);
+      
+      const isCorrect = result.status === ec.expectedStatus;
+      
+      results.push({
+        testId: result.testId,
+        title: result.title,
+        expectedStatus: ec.expectedStatus,
+        actualStatus: result.status,
+        isCorrect
+      });
+
+      if (isCorrect) {
+        console.log(`✅ Correct verdict: ${result.status}`);
+      } else {
+        console.log(`❌ Incorrect verdict: ${result.status} (expected ${ec.expectedStatus})`);
+      }
+    } catch (error) {
+      console.error(`Error evaluating ${ec.testFilePath}:`, error);
+    }
   }
 
-  console.log(`Evaluating on ${testCases.length} test cases...`);
-  
-  const suite = {
-    name: 'Evaluation Suite',
-    testCases
+  const evalRunResult: EvalRunResult = {
+    total: results.length,
+    correct: results.filter(r => r.isCorrect).length,
+    accuracy: (results.filter(r => r.isCorrect).length / results.length) * 100,
+    falsePositives: results.filter(r => r.expectedStatus === 'failed' && r.actualStatus === 'passed').length,
+    falseNegatives: results.filter(r => r.expectedStatus === 'passed' && r.actualStatus === 'failed').length,
+    results
   };
 
-  try {
-    const result = await runTestSuite(suite, config);
-    runStore.saveRun(result);
-
-    console.log('\n--- EVALUATION RESULTS ---');
-    console.log(`Total: ${result.summary.total}`);
-    console.log(`Passed: ${result.summary.passed}`);
-    console.log(`Failed: ${result.summary.failed}`);
-    console.log(`Success Rate: ${((result.summary.passed / result.summary.total) * 100).toFixed(2)}%`);
-    
-    // Exit with 1 if any test failed
-    process.exit(result.summary.failed > 0 ? 1 : 0);
-  } catch (error) {
-    console.error('Evaluation failed:', error);
+  console.log('\n--- EVALUATION SUMMARY ---');
+  console.log(`Accuracy: ${evalRunResult.accuracy.toFixed(2)}% (${evalRunResult.correct}/${evalRunResult.total})`);
+  console.log(`False Positives (Expected FAIL, got PASS): ${evalRunResult.falsePositives}`);
+  console.log(`False Negatives (Expected PASS, got FAIL): ${evalRunResult.falseNegatives}`);
+  
+  if (evalRunResult.accuracy === 100) {
+    console.log('\n🎉 Perfect Accuracy! All validation verdicts are correct.');
+    process.exit(0);
+  } else {
+    console.log('\n⚠️ Some verdicts were incorrect.');
     process.exit(1);
   }
 }

@@ -13,14 +13,23 @@ export interface BugReport {
   timestamp: string;
 }
 
+export interface AssertionResult {
+  description: string;
+  passed: boolean;
+  evidence?: string;
+  timestamp: string;
+}
+
 export interface TestCaseResult {
   testId: string;
   title: string;
   status: 'passed' | 'failed' | 'inconclusive' | 'error';
   duration: number;
   bugs: BugReport[];
+  assertions: AssertionResult[];
   screenshots: string[];
   agentOutput: string;
+  validationOutput?: string;
   error?: string;
 }
 

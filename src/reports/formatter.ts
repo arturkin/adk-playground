@@ -1,4 +1,4 @@
-import { TestRunResult, RegressionReport, TestCaseResult, BugReport } from '../types/report.js';
+import { TestRunResult, RegressionReport } from '../types/report.js';
 
 /**
  * Formats test run results and regression reports into Markdown.
@@ -38,14 +38,32 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
     }
   }
 
-  const failedTests = run.results.filter(r => r.status === 'failed' || r.status === 'error');
-  if (failedTests.length > 0) {
-    md += `## Failed Tests\n\n`;
-    failedTests.forEach(test => {
-      md += `### ${test.title} (${test.status.toUpperCase()})\n`;
+  const testsWithDetails = run.results.filter(r =>
+    r.status === 'failed' ||
+    r.status === 'error' ||
+    (r.assertions && r.assertions.length > 0) ||
+    (r.bugs && r.bugs.length > 0)
+  );
+
+  if (testsWithDetails.length > 0) {
+    md += `## Test Details\n\n`;
+    testsWithDetails.forEach(test => {
+      const statusEmoji = test.status === 'passed' ? '✅' : (test.status === 'failed' || test.status === 'error' ? '❌' : '❓');
+      md += `### ${statusEmoji} ${test.title} (${test.status.toUpperCase()})\n`;
       md += `- **Test ID**: \`${test.testId}\`\n`;
       md += `- **Duration**: ${(test.duration / 1000).toFixed(2)}s\n`;
       if (test.error) md += `- **Error**: \`${test.error}\`\n`;
+
+      if (test.assertions && test.assertions.length > 0) {
+        md += `#### Assertions\n`;
+        md += `| Status | Description | Evidence |\n`;
+        md += `|--------|-------------|----------|\n`;
+        test.assertions.forEach(a => {
+          const passEmoji = a.passed ? '✅' : '❌';
+          md += `| ${passEmoji} | ${a.description} | ${a.evidence || '-'} |\n`;
+        });
+        md += `\n`;
+      }
 
       if (test.bugs && test.bugs.length > 0) {
         md += `#### Detected Bugs\n`;
@@ -63,7 +81,11 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
         });
       }
 
-      md += `#### Agent Output\n<details><summary>Click to expand</summary>\n\n${test.agentOutput}\n\n</details>\n\n`;
+      if (test.validationOutput) {
+        md += `#### Validation Output\n<details><summary>Click to expand</summary>\n\n${test.validationOutput}\n\n</details>\n\n`;
+      }
+
+      md += `#### Reporter Output\n<details><summary>Click to expand</summary>\n\n${test.agentOutput}\n\n</details>\n\n`;
     });
   }
 

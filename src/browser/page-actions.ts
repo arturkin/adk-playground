@@ -33,11 +33,28 @@ export async function hoverElement(page: Page, id: number) {
 }
 
 export async function clickElement(page: Page, id: number) {
+  // Set up navigation listener BEFORE the click so we can detect page navigation
+  const navPromise = page.waitForNavigation({
+    waitUntil: 'domcontentloaded',
+    timeout: 5000,
+  }).then(() => true).catch(() => false);
+
   await page.evaluate((id) => {
     const el = (window as any).aiElementMap[id];
     if (!el) throw new Error(`Element ${id} not found`);
     el.click();
   }, id);
+
+  // Wait up to 2s to see if the click triggered a navigation
+  const didNavigate = await Promise.race([
+    navPromise,
+    new Promise<false>(resolve => setTimeout(() => resolve(false), 2000)),
+  ]);
+
+  if (didNavigate) {
+    // Full navigation occurred - wait for the new page to render
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
 }
 
 export async function typeElement(page: Page, id: number, text: string) {
@@ -67,5 +84,28 @@ export async function typeText(page: Page, text: string) {
 }
 
 export async function pressKey(page: Page, key: string) {
+  // Keys that can trigger form submission / navigation
+  const navigationKeys = ['Enter', 'NumpadEnter'];
+  const mightNavigate = navigationKeys.includes(key);
+
+  let navPromise: Promise<boolean> | null = null;
+  if (mightNavigate) {
+    navPromise = page.waitForNavigation({
+      waitUntil: 'domcontentloaded',
+      timeout: 5000,
+    }).then(() => true).catch(() => false);
+  }
+
   await page.keyboard.press(key as any);
+
+  if (navPromise) {
+    const didNavigate = await Promise.race([
+      navPromise,
+      new Promise<false>(resolve => setTimeout(() => resolve(false), 2000)),
+    ]);
+
+    if (didNavigate) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
 }

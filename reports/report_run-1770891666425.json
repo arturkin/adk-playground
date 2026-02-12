@@ -1,0 +1,28 @@
+{
+  "runId": "run-1770891666425",
+  "timestamp": "2026-02-12T10:21:23.564Z",
+  "gitCommit": "070d28b2d8f4cfa9651a677a6cd0919f1585003f",
+  "results": [
+    {
+      "testId": "tests/negative/impossible-element.md",
+      "title": "Impossible Element (Negative Test)",
+      "status": "inconclusive",
+      "duration": 17001,
+      "bugs": [],
+      "assertions": [],
+      "screenshots": [
+        "screenshot_1770891683425.png"
+      ],
+      "agentOutput": "",
+      "validationOutput": ""
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 0,
+    "inconclusive": 1,
+    "errors": 0,
+    "duration": 17106
+  }
+}

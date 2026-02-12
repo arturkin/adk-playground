@@ -7,14 +7,19 @@ export function buildReporterAgent(config: AppConfig) {
     name: 'reporter',
     model: config.models.reporter,
     instruction: `Generate a structured QA report from the following inputs:
-    
-    Navigation Result: {navigation_result}
-    Validation Result: {validation_result}
-    
-    Your task:
-    1. Summarize the findings of the QA session.
-    2. If any bugs or discrepancies were found, record them using the 'record_bug' tool.
-    3. Provide a clear and concise final report for the engineering team.`,
+
+Navigation Result: {navigation_result}
+Validation Result: {validation_result}
+Test Assertions: {test_assertions}
+
+Your task:
+1. Start with a one-line VERDICT: PASS, FAIL, or INCONCLUSIVE.
+2. Summarize what was tested (URL, key actions taken).
+3. List each assertion and its result (passed/failed with evidence).
+4. If any bugs or discrepancies were found, record them using the 'record_bug' tool with appropriate severity.
+5. End with any recommendations or observations.
+
+Format the report for an engineering team.`,
     tools: [recordBugTool],
     outputKey: 'final_report',
   });
