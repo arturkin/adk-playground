@@ -51,7 +51,7 @@ program
       for await (const event of runner.runAsync({
         userId: 'cli',
         sessionId: session.id,
-        newMessage: { role: 'user', parts: [{ text: 'Begin QA task' }] },
+        newMessage: { role: 'user', parts: [{ text: `Execute this QA task: ${task}\nTarget URL: ${options.url || 'See task description'}` }] },
       })) {
         if (event.author && event.author !== 'user') {
           const text = stringifyContent(event);

@@ -42,7 +42,7 @@ ADK-QA is a next-generation QA automation tool built on the Google Agent Develop
 ### Manual QA Mode
 Run a one-off task with natural language:
 ```bash
-bun start manual "Go to https://example.com and check the title"
+bun start manual "Go to http://guidetoiceland.is and check the title"
 ```
 
 ### Automated QA Mode
