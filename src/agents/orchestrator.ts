@@ -59,11 +59,20 @@ export class OrchestratorAgent extends BaseAgent {
     }
 
     // Phase 3: Generate report
-    for await (const event of this.reporter.runAsync(ctx)) {
-      if (event.actions?.stateDelta) {
-        Object.assign(ctx.session.state, event.actions.stateDelta);
+    try {
+      for await (const event of this.reporter.runAsync(ctx)) {
+        if (event.actions?.stateDelta) {
+          Object.assign(ctx.session.state, event.actions.stateDelta);
+        }
+        yield event;
       }
-      yield event;
+    } catch (e) {
+      // Reporter may crash (e.g., LLM calls a tool not in its toolset).
+      // Log and continue so we still get partial results.
+      console.warn(`  \x1b[33m[Reporter error: ${(e as Error).message}] -- continuing\x1b[0m`);
+      if (!ctx.session.state['final_report']) {
+        ctx.session.state['final_report'] = `REPORTER_ERROR: ${(e as Error).message}`;
+      }
     }
   }
 
