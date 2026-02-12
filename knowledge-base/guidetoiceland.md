@@ -1,8 +1,8 @@
 # Guide to Iceland Domain Knowledge
 
 ## Components
-- **Tours Tab**: The "Tours" option in the main booking widget or navigation.
-- **Cars Tab**: The "Cars" or "Car rentals" option in the main booking widget or navigation.
+- **Tours Tab**: The "Tours" option in the main search widget
+- **Cars Tab**: The "Cars" or "Car rentals" option in the main search widget
 - **Tour Card**: A search result representing a tour. Must show "from [Price]" and a "About this tour" / "About this package" button.
 - **Car Rental Card**: A search result representing a car rental. Must show car details and "About this car" button.
 

@@ -36,6 +36,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
         expected_criteria: testCase.expectedOutcome,
         current_viewport: testCase.viewport,
         knowledge_base: knowledgeBase,
+        assertion_count: String(testCase.assertions.length),
         test_assertions: `You MUST call record_assertion exactly ${testCase.assertions.length} time(s) — one for each assertion:\n` +
           testCase.assertions.map((a, i) =>
             `- Assertion ID ${i + 1}: "${a.description}"`
@@ -65,7 +66,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       if (event.author && event.author !== 'user') {
         const text = stringifyContent(event);
         if (text) {
-          console.log(`  \x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
+          console.log(`  \x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 500)}${text.length > 500 ? '...' : ''}`);
         }
 
         const functionCalls = getFunctionCalls(event);

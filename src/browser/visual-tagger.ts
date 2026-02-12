@@ -42,7 +42,7 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
     const selectors = [
       "button",
       "a",
-      "p",
+
       "input",
       "select",
       "textarea",
@@ -167,12 +167,43 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
         "";
       text = text.slice(0, 100).replace(/\s+/g, " ").trim();
 
-      elementMetadata.push({
+      const meta: any = {
         id: id,
         tagName: el.tagName.toLowerCase(),
         text: text,
-        role: el.getAttribute("role") || undefined,
-      });
+      };
+
+      // Add role if present
+      const role = el.getAttribute("role");
+      if (role) meta.role = role;
+
+      // Add href for links
+      if (el.tagName === "A") {
+        const href = el.getAttribute("href");
+        if (href) meta.href = href.slice(0, 120);
+      }
+
+      // Add type and placeholder for inputs
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+        const type = el.getAttribute("type");
+        if (type) meta.type = type;
+        const placeholder = el.getAttribute("placeholder");
+        if (placeholder) meta.placeholder = placeholder.slice(0, 80);
+      }
+
+      // Add truncated className for component recognition (e.g., DayPicker, ContentDropdown)
+      const className = el.className;
+      if (typeof className === "string" && className.length > 0) {
+        meta.className = className.slice(0, 80);
+      }
+
+      // Add aria-label if different from text
+      const ariaLabel = el.getAttribute("aria-label");
+      if (ariaLabel && ariaLabel !== text) {
+        meta.ariaLabel = ariaLabel.slice(0, 80);
+      }
+
+      elementMetadata.push(meta);
     });
 
     return elementMetadata;

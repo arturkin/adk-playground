@@ -1,8 +1,19 @@
 import { FunctionTool, type ToolContext } from '@google/adk';
 import { z } from 'zod';
-import { clickElement, typeElement, pressKey, hoverElement } from '../browser/index.js';
+import { clickElement, typeElement, pressKey, hoverElement, getBrowserManager } from '../browser/index.js';
 import { captureBrowserState } from './_helpers.js';
 
+/**
+ * Looks up the element metadata from latest_elements state by ID.
+ */
+function getElementMeta(toolContext: ToolContext, id: number): any {
+  try {
+    const elements = JSON.parse(toolContext.state.get('latest_elements') as string || '[]');
+    return elements.find((el: any) => el.id === id) || null;
+  } catch {
+    return null;
+  }
+}
 
 const clickParamsSchema = z.object({
   id: z.number().describe('The visual ID of the element to click'),
@@ -16,11 +27,15 @@ export const clickElementTool = new FunctionTool({
   execute: async ({ id }: any, toolContext) => {
     if (!toolContext) throw new Error('ToolContext is required');
     try {
+      const elMeta = getElementMeta(toolContext, id);
       await clickElement(id);
       const elementCount = await captureBrowserState(toolContext);
+      const page = getBrowserManager().getPage();
       return {
         status: 'success',
         message: `Clicked element #${id}`,
+        clickedElement: elMeta,
+        currentUrl: page.url(),
         elementCount,
       };
     } catch (e) {

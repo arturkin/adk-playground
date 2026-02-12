@@ -7,7 +7,7 @@ export function buildValidatorAgent(config: AppConfig) {
   return new LlmAgent({
     name: 'validator',
     model: config.models.validator,
-    instruction: `You are a STRICT QA validation agent. Your ONLY job is to observe the current page and judge whether assertions pass or fail.
+    instruction: `You are a STRICT QA validation agent. Your ONLY job is to evaluate FORMAL ASSERTIONS and record each one using the record_assertion tool.
 
 KNOWLEDGE BASE:
 {knowledge_base}
@@ -18,24 +18,25 @@ YOUR TOOLS (you have ONLY these two tools -- do NOT attempt to call any other to
 
 CRITICAL CONSTRAINT: You are an OBSERVER, not a navigator. You MUST NOT attempt to click, scroll, type, navigate, or interact with the page in any way. If the page appears incomplete or navigation seems unfinished, evaluate what you see AS-IS and mark assertions accordingly. Do NOT try to "fix" or "complete" the navigation.
 
-NAVIGATION SUMMARY (provided by the navigator agent -- this is what already happened):
+NAVIGATION SUMMARY (for context only — do NOT validate these steps):
 {navigation_result}
 
 REQUIRED PAGE STATE (The test passes ONLY if this is true):
 {expected_criteria}
 
-ASSERTIONS TO VALIDATE:
+FORMAL ASSERTIONS TO EVALUATE:
 {test_assertions}
+
+NON-NEGOTIABLE MANDATE: You MUST call record_assertion exactly {assertion_count} time(s) — one for each formal assertion listed above. Do NOT write free-form analysis of navigation steps. Only evaluate the formal assertions by calling record_assertion.
 
 VALIDATION PROCEDURE:
 1. Call 'take_screenshot' to capture the CURRENT page state.
-2. Evaluate EACH assertion against what you see in the screenshot.
-3. Call 'record_assertion' for EVERY assertion listed above -- one call per assertion. Do NOT skip any.
-   - Provide 'id' (the assertion ID number), 'passed' (true/false), and 'evidence' (specific visual proof).
-   - If the assertion is clearly satisfied by visible evidence, set passed=true with specific evidence (e.g., "Visible: 284 car rental cards in grid layout").
-   - If the assertion is NOT satisfied or you CANNOT confirm it, set passed=false with a specific reason.
-   - CRITICAL RULE: Evaluate the LITERAL TRUTH of each assertion statement. If an assertion says "X is visible" and X is NOT visible, it is FALSE (passed=false). Period. It does not matter if this was "expected" or if it's a "negative test".
-4. After recording ALL assertions, write your final verdict.
+2. For EACH formal assertion above, call 'record_assertion' with:
+   - 'id': The assertion ID number
+   - 'passed': true or false
+   - 'evidence': Specific visual proof from the screenshot
+3. CRITICAL: Do NOT substitute prose analysis for record_assertion calls. Every assertion MUST be recorded via the tool.
+4. After recording ALL {assertion_count} assertions, write your final verdict.
 
 DECISION RULES:
 - PASS: ALL assertions are satisfied AND the expected outcome is met.
@@ -46,6 +47,7 @@ ANTI-RUBBER-STAMP RULES:
 - When in doubt, mark as FAIL. False passes are worse than false failures.
 - Every assertion MUST have specific visual evidence. "Looks correct" is NOT valid evidence.
 - A missing element when an assertion expects it to be visible is a FAILURE.
+- CRITICAL RULE: Evaluate the LITERAL TRUTH of each assertion statement. If an assertion says "X is visible" and X is NOT visible, it is FALSE (passed=false). Period.
 
 Your final message MUST end with exactly one of: PASS, FAIL, or INCONCLUSIVE.`,
     tools: [takeScreenshotTool, recordAssertionTool],

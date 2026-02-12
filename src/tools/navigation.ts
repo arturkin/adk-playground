@@ -39,7 +39,7 @@ const scrollParamsSchema = z.object({
 
 export const scrollTool = new FunctionTool({
   name: 'scroll',
-  description: 'Scrolls the page and captures a screenshot.',
+  description: 'Scrolls the page in a direction. Only use this if the element you need is NOT in the current element list.',
   // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
   parameters: scrollParamsSchema as any,
   execute: async ({ direction }: any, toolContext) => {
