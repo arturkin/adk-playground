@@ -8,6 +8,9 @@ export function buildNavigatorAgent(config: AppConfig) {
     name: 'navigator',
     model: config.models.navigator,
     instruction: `You are a QA automation expert. Your goal is to complete the assigned test steps sequentially.
+    
+    KNOWLEDGE BASE (Consult this for domain terms and UI components):
+    {knowledge_base}
 
     Test steps to execute:
     {task_steps}

@@ -4,6 +4,7 @@ import { type AppConfig } from '../config/schema.js';
 import { TestCase, TestSuite } from '../types/test.js';
 import { TestRunResult, TestCaseResult, BugReport } from '../types/report.js';
 import { runStore } from '../memory/index.js';
+import { loadKnowledgeBase } from './discovery.js';
 import { getFunctionCalls, stringifyContent } from '@google/adk';
 import { execSync } from 'child_process';
 
@@ -17,21 +18,24 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
   // Try to find viewport preset
   const viewport = config.viewports.find(v => v.name === testCase.viewport) || config.viewports[0];
   const browser = getBrowserManager(viewport);
-  
+
+    const knowledgeBase = await loadKnowledgeBase(config.knowledgeBaseDir);
+
   try {
     // We launch browser for each test to ensure clean state
     await browser.launch(config.headless);
-    
+
     const formattedSteps = testCase.steps.map(s => `${s.index}. ${s.instruction}`).join('\n');
 
     const session = await runner.sessionService.createSession({
       appName: 'adk-qa',
       userId: 'test-runner',
-      state: { 
+      state: {
         task_steps: formattedSteps,
         url_hint: testCase.url,
         expected_criteria: testCase.expectedOutcome,
         current_viewport: testCase.viewport,
+        knowledge_base: knowledgeBase,
         test_assertions: `You MUST call record_assertion exactly ${testCase.assertions.length} time(s) — one for each assertion:\n` +
           testCase.assertions.map((a, i) =>
             `- Assertion ID ${i + 1}: "${a.description}"`
@@ -49,13 +53,13 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
     for await (const event of runner.runAsync({
       userId: 'test-runner',
       sessionId: session.id,
-      newMessage: { 
-        role: 'user', 
-        parts: [{ 
+      newMessage: {
+        role: 'user',
+        parts: [{
           text: `Execute Automated Test: ${testCase.title}\n` +
                 `Target URL: ${testCase.url}\n` +
                 `Steps:\n${formattedSteps}`
-        }] 
+        }]
       },
     })) {
       if (event.author && event.author !== 'user') {
@@ -63,7 +67,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
         if (text) {
           console.log(`  \x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
         }
-        
+
         const functionCalls = getFunctionCalls(event);
         for (const call of functionCalls) {
           console.log(`    \x1b[33m[Tool: ${call.name}] calling...\x1b[0m`);
@@ -71,10 +75,10 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       }
     }
 
-    const sessionDetails = await runner.sessionService.getSession({ 
+    const sessionDetails = await runner.sessionService.getSession({
       appName: 'adk-qa',
       userId: 'test-runner',
-      sessionId: session.id 
+      sessionId: session.id
     });
 
     const validationResult = (sessionDetails?.state?.['validation_result'] as string) || '';
@@ -83,7 +87,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
     const latestScreenshot = (sessionDetails?.state?.['latest_screenshot'] as string) || '';
     const assertionsJson = (sessionDetails?.state?.['assertions'] as string) || '[]';
     const assertions = JSON.parse(assertionsJson);
-    
+
     const bugs: BugReport[] = JSON.parse(bugsJson);
 
     // Save the latest screenshot if it exists
@@ -93,7 +97,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       runStore.saveScreenshot(runId, filename, latestScreenshot);
       screenshotFiles.push(filename);
     }
-    
+
     let status: 'passed' | 'failed' | 'inconclusive' | 'error';
     // Signal 1: validation_result text
     const validationVerdict = validationResult.toUpperCase();
@@ -109,7 +113,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       return a.passed === true && a.description.trim().toLowerCase() === original.description.trim().toLowerCase();
     });
     const anyAssertionFailed = hasAssertions && (
-      assertions.some((a: any) => a.passed === false) || 
+      assertions.some((a: any) => a.passed === false) ||
       assertions.length < testCase.assertions.length // Missing assertions count as failed
     );
 

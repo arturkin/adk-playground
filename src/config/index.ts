@@ -13,6 +13,7 @@ function loadConfig(): AppConfig {
     headless: process.env.HEADLESS !== 'false',
     maxNavigationIterations: process.env.MAX_ITERATIONS ? parseInt(process.env.MAX_ITERATIONS) : undefined,
     testDir: process.env.TEST_DIR,
+    knowledgeBaseDir: process.env.KNOWLEDGE_BASE_DIR,
     reportDir: process.env.REPORT_DIR,
     debug: process.env.DEBUG === 'true',
   };

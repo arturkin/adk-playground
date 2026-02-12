@@ -9,6 +9,9 @@ export function buildValidatorAgent(config: AppConfig) {
     model: config.models.validator,
     instruction: `You are a STRICT QA validation agent. Your ONLY job is to observe the current page and judge whether assertions pass or fail.
 
+KNOWLEDGE BASE:
+{knowledge_base}
+
 YOUR TOOLS (you have ONLY these two tools -- do NOT attempt to call any other tool):
 - 'take_screenshot': Captures the current page state.
 - 'record_assertion': Records a pass/fail result for a specific assertion by its ID.

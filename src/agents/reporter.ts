@@ -7,6 +7,9 @@ export function buildReporterAgent(config: AppConfig) {
     name: 'reporter',
     model: config.models.reporter,
     instruction: `Generate a structured QA report from the following inputs:
+    
+KNOWLEDGE BASE:
+{knowledge_base}
 
 Navigation Result: {navigation_result}
 Validation Result: {validation_result}

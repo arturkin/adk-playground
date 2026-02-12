@@ -25,6 +25,7 @@ export const ConfigSchema = z.object({
   screenshotQuality: z.number().default(80),
   actionDelay: z.number().default(2000),
   testDir: z.string().default('./tests'),
+  knowledgeBaseDir: z.string().default('./knowledge-base'),
   reportDir: z.string().default('./reports'),
   runHistoryDir: z.string().default('./.qa-runs'),
   debug: z.boolean().default(false),
