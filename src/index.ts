@@ -136,6 +136,12 @@ program
       console.log(`Total: ${runResult.summary.total}`);
       console.log(`Passed: \x1b[32m${runResult.summary.passed}\x1b[0m`);
       console.log(`Failed: \x1b[31m${runResult.summary.failed}\x1b[0m`);
+      if (runResult.summary.inconclusive > 0) {
+        console.log(`Inconclusive: \x1b[33m${runResult.summary.inconclusive}\x1b[0m`);
+      }
+      if (runResult.summary.errors > 0) {
+        console.log(`Errors: \x1b[31m${runResult.summary.errors}\x1b[0m`);
+      }
       console.log(`Duration: ${(runResult.summary.duration / 1000).toFixed(2)}s`);
       console.log(`Reports: ${mdPath}, ${jsonPath}`);
 

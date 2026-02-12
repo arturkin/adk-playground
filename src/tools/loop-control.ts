@@ -15,6 +15,10 @@ export const taskCompletedTool = new FunctionTool({
     // Escalate to exit the LoopAgent
     toolContext.actions.escalate = true;
     
+    // Manually set navigation_result because LoopAgent + escalate 
+    // might bypass the automatic outputKey saving.
+    toolContext.state.set('navigation_result', summary);
+    
     return {
       status: 'success',
       message: 'Task completed successfully.',

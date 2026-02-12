@@ -13,11 +13,13 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
   md += `- **Total Tests**: ${run.summary.total}\n`;
   md += `- **Passed**: ${run.summary.passed}\n`;
   md += `- **Failed**: ${run.summary.failed}\n`;
+  if (run.summary.inconclusive > 0) md += `- **Inconclusive**: ${run.summary.inconclusive}\n`;
+  if (run.summary.errors > 0) md += `- **Errors**: ${run.summary.errors}\n`;
   md += `- **Duration**: ${(run.summary.duration / 1000).toFixed(2)}s\n\n`;
 
   if (regression && (regression.regressions.length > 0 || regression.improvements.length > 0)) {
     md += `## Regressions & Improvements\n`;
-    
+
     if (regression.regressions.length > 0) {
       md += `### ⚠️ Regressions\n`;
       regression.regressions.forEach(r => {
@@ -44,7 +46,7 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
       md += `- **Test ID**: \`${test.testId}\`\n`;
       md += `- **Duration**: ${(test.duration / 1000).toFixed(2)}s\n`;
       if (test.error) md += `- **Error**: \`${test.error}\`\n`;
-      
+
       if (test.bugs && test.bugs.length > 0) {
         md += `#### Detected Bugs\n`;
         test.bugs.forEach(bug => {
@@ -60,7 +62,7 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
           md += `\n`;
         });
       }
-      
+
       md += `#### Agent Output\n<details><summary>Click to expand</summary>\n\n${test.agentOutput}\n\n</details>\n\n`;
     });
   }

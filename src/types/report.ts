@@ -33,6 +33,8 @@ export interface TestRunResult {
     total: number;
     passed: number;
     failed: number;
+    inconclusive: number;
+    errors: number;
     duration: number;
   };
 }

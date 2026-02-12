@@ -28,13 +28,28 @@ export class OrchestratorAgent extends BaseAgent {
 
   async *runAsyncImpl(ctx: InvocationContext): AsyncGenerator<Event> {
     // Phase 1: Navigate and interact
-    yield* this.navigatorLoop.runAsync(ctx);
+    for await (const event of this.navigatorLoop.runAsync(ctx)) {
+      if (event.actions?.stateDelta) {
+        Object.assign(ctx.session.state, event.actions.stateDelta);
+      }
+      yield event;
+    }
 
     // Phase 2: Validate outcomes
-    yield* this.validator.runAsync(ctx);
+    for await (const event of this.validator.runAsync(ctx)) {
+      if (event.actions?.stateDelta) {
+        Object.assign(ctx.session.state, event.actions.stateDelta);
+      }
+      yield event;
+    }
 
     // Phase 3: Generate report
-    yield* this.reporter.runAsync(ctx);
+    for await (const event of this.reporter.runAsync(ctx)) {
+      if (event.actions?.stateDelta) {
+        Object.assign(ctx.session.state, event.actions.stateDelta);
+      }
+      yield event;
+    }
   }
 
   // OrchestratorAgent is deterministic and doesn't need to implement runLiveImpl

@@ -38,7 +38,14 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
     for await (const event of runner.runAsync({
       userId: 'test-runner',
       sessionId: session.id,
-      newMessage: { role: 'user', parts: [{ text: 'Begin Automated Test' }] },
+      newMessage: { 
+        role: 'user', 
+        parts: [{ 
+          text: `Execute Automated Test: ${testCase.title}\n` +
+                `Target URL: ${testCase.url}\n` +
+                `Steps:\n${formattedSteps}`
+        }] 
+      },
     })) {
       if (event.author && event.author !== 'user') {
         const text = stringifyContent(event);
@@ -63,6 +70,9 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
     const finalReport = (sessionDetails?.state?.['final_report'] as string) || '';
     const bugsJson = (sessionDetails?.state?.['bugs'] as string) || '[]';
     const latestScreenshot = (sessionDetails?.state?.['latest_screenshot'] as string) || '';
+    const assertionsJson = (sessionDetails?.state?.['assertions'] as string) || '[]';
+    const assertions = JSON.parse(assertionsJson);
+    
     const bugs: BugReport[] = JSON.parse(bugsJson);
 
     // Save the latest screenshot if it exists
@@ -73,8 +83,19 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       screenshotFiles.push(filename);
     }
     
-    const status = validationResult.toUpperCase().includes('PASS') ? 'passed' : 
-                   validationResult.toUpperCase().includes('FAIL') ? 'failed' : 'inconclusive';
+    let status: 'passed' | 'failed' | 'inconclusive' | 'error';
+    if (validationResult.toUpperCase().includes('PASS')) {
+      status = 'passed';
+    } else if (validationResult.toUpperCase().includes('FAIL')) {
+      status = 'failed';
+    } else if (assertions.length > 0) {
+      // Fallback: use recorded assertions
+      const allPassed = assertions.every((a: any) => a.passed === true);
+      const anyFailed = assertions.some((a: any) => a.passed === false);
+      status = anyFailed ? 'failed' : allPassed ? 'passed' : 'inconclusive';
+    } else {
+      status = 'inconclusive';
+    }
 
     return {
       testId: testCase.id,
@@ -118,7 +139,9 @@ export async function runTestSuite(suite: TestSuite, config: AppConfig): Promise
 
   const duration = Date.now() - startTime;
   const passed = results.filter(r => r.status === 'passed').length;
-  const failed = results.filter(r => r.status === 'failed' || r.status === 'error').length;
+  const failed = results.filter(r => r.status === 'failed').length;
+  const inconclusive = results.filter(r => r.status === 'inconclusive').length;
+  const errors = results.filter(r => r.status === 'error').length;
 
   let gitCommit: string | undefined;
   try {
@@ -136,6 +159,8 @@ export async function runTestSuite(suite: TestSuite, config: AppConfig): Promise
       total: suite.testCases.length,
       passed,
       failed,
+      inconclusive,
+      errors,
       duration,
     },
   };
