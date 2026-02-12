@@ -2,6 +2,9 @@ import { Command } from 'commander';
 import { config } from './config/index.js';
 import { createRunner } from './agents/index.js';
 import { getBrowserManager } from './browser/index.js';
+import { discoverTests } from './tests/discovery.js';
+import { runTestSuite, runTestCase } from './tests/runner.js';
+import { parseTestCase } from './tests/parser.js';
 
 const program = new Command();
 
@@ -86,8 +89,48 @@ program
   .option('--test-dir <dir>', 'Directory containing test files', config.testDir)
   .option('--test-file <file>', 'Specific test file to run')
   .action(async (options) => {
-    console.log('Automated mode is not yet implemented (Task 6).');
-    process.exit(0);
+    if (!config.apiKey) {
+      console.error('Error: GOOGLE_GENAI_API_KEY is not set.');
+      process.exit(1);
+    }
+
+    let suite;
+    if (options.testFile) {
+      console.log(`Running single test file: ${options.testFile}`);
+      try {
+        const testCase = parseTestCase(options.testFile);
+        suite = { name: 'Single Test', testCases: [testCase] };
+      } catch (e) {
+        console.error(`Failed to parse test file: ${(e as Error).message}`);
+        process.exit(1);
+      }
+    } else {
+      console.log(`Discovering tests in: ${options.testDir}`);
+      suite = await discoverTests(options.testDir);
+    }
+
+    if (suite.testCases.length === 0) {
+      console.log('No tests found.');
+      process.exit(0);
+    }
+
+    console.log(`Found ${suite.testCases.length} tests. Starting execution...`);
+    
+    try {
+      const runResult = await runTestSuite(suite, config);
+      
+      console.log('\n\x1b[1m--- TEST RUN SUMMARY ---\x1b[0m');
+      console.log(`Run ID: ${runResult.runId}`);
+      console.log(`Total: ${runResult.summary.total}`);
+      console.log(`Passed: \x1b[32m${runResult.summary.passed}\x1b[0m`);
+      console.log(`Failed: \x1b[31m${runResult.summary.failed}\x1b[0m`);
+      console.log(`Duration: ${(runResult.summary.duration / 1000).toFixed(2)}s`);
+      
+      process.exit(runResult.summary.failed > 0 ? 1 : 0);
+    } catch (error) {
+      console.error('Test run failed:', error);
+      process.exit(1);
+    }
   });
 
 program.parse();
