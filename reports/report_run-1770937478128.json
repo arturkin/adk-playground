@@ -1,0 +1,51 @@
+{
+  "runId": "run-1770937478128",
+  "timestamp": "2026-02-12T23:08:09.153Z",
+  "gitCommit": "379e9a26680956b439aa491683ae5bee57adeccf",
+  "modelConfig": {
+    "navigator": "gemini-2.5-flash",
+    "validator": "gemini-2.5-flash",
+    "reporter": "gemini-2.5-flash",
+    "evaluator": "gemini-2.5-flash"
+  },
+  "results": [
+    {
+      "testId": "tests/search-tour.md",
+      "title": "Search Tour",
+      "status": "failed",
+      "duration": 210883,
+      "bugs": [
+        {
+          "severity": "critical",
+          "category": "functional",
+          "title": "Booking widget not working on tour product pages",
+          "description": "During the \"Search Tour\" automated test, it was observed that the booking widget on all tour product pages consistently displayed an error message. This prevented the test from adding any tours to the cart or proceeding to checkout. Two different tour pages were attempted, and both exhibited the same error.",
+          "expected": "The booking widget should function correctly, allowing users to add tours to the cart and proceed to checkout without any error messages.",
+          "actual": "The booking widget displayed the error message \"Whoops! We are terribly sorry. It seems our booking widget is not working at the moment.\", making it impossible to add tours to the cart or proceed to checkout.",
+          "id": "BUG-1770937688127",
+          "timestamp": "2026-02-12T23:08:08.127Z",
+          "url": "https://guidetoiceland.is/book-trips-holiday",
+          "viewport": "desktop",
+          "steps": [],
+          "screenshots": [
+            "screenshot_1770937688127"
+          ]
+        }
+      ],
+      "assertions": [],
+      "screenshots": [
+        "screenshot_1770937689010.png"
+      ],
+      "agentOutput": "A critical functional bug has been recorded with the ID \"BUG-1770937688127\". The booking widget on the product pages is not working, preventing users from adding tours to the cart and proceeding to checkout.",
+      "validationOutput": "\nThe test \"Search Tour\" failed because the booking widget on the product page is consistently showing an error message, \"Whoops! We are terribly sorry. It seems our booking widget is not working at the moment.\" This prevented adding a tour to the cart and proceeding to checkout. I attempted two different tour pages, and both displayed the same error.The automated test \"Search Tour\" has failed. The booking widget on the product pages is consistently showing an error message, \"Whoops! We are terribly sorry. It seems our booking widget is not working at the moment.\" This prevents adding a tour to the cart and proceeding to checkout. I attempted two different tour pages, both displayed the same error."
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "inconclusive": 0,
+    "errors": 0,
+    "duration": 211007
+  }
+}

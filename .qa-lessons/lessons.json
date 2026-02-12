@@ -1,0 +1,35 @@
+[
+  {
+    "testId": "tests/search-tour.md",
+    "runId": "run-1770937204570",
+    "timestamp": "2026-02-12T23:04:31.418Z",
+    "failureReason": "Test definition incomplete or unclear",
+    "failureCategory": "test_definition_issue",
+    "analysis": "Test failed with status: failed. Validation: \nI've recorded assertions for all the failed steps. Now I need to try to get back to the home page to retry. I will click on \"Home\" (ID 3).I've recorded assertions for the failed steps. Now, I'll navi...",
+    "advice": "The test may have incomplete steps or missing assertions. Review the test definition for clarity and completeness.",
+    "consecutiveFailures": 1,
+    "resolved": false
+  },
+  {
+    "testId": "tests/search-tour.md",
+    "runId": "run-1770937478128",
+    "timestamp": "2026-02-12T23:08:09.012Z",
+    "failureReason": "Test definition incomplete or unclear",
+    "failureCategory": "test_definition_issue",
+    "analysis": "Test failed with status: failed. Validation: \nThe test \"Search Tour\" failed because the booking widget on the product page is consistently showing an error message, \"Whoops! We are terribly sorry. It seems our booking widget is not working at th...",
+    "advice": "The test may have incomplete steps or missing assertions. Review the test definition for clarity and completeness.",
+    "consecutiveFailures": 2,
+    "resolved": false
+  },
+  {
+    "testId": "tests/search-tour.md",
+    "runId": "run-1770937695050",
+    "timestamp": "2026-02-12T23:08:42.451Z",
+    "failureReason": "Page failed to load or navigate correctly",
+    "failureCategory": "navigation_error",
+    "analysis": "Test failed with status: failed. Validation: The website `https://guidetoiceland.is` is currently returning an HTTP ERROR 406. I am unable to access the page and therefore cannot proceed with the automated test. The task cannot be completed due ...",
+    "advice": "Check that the navigate tool is called correctly. Verify the URL is accessible. If HTTP errors persist, try reloading the page or check for network issues.",
+    "consecutiveFailures": 3,
+    "resolved": false
+  }
+]

@@ -1,4 +1,5 @@
 import { TestRunResult, RegressionReport } from '../types/report.js';
+import { testCorrectionManager } from '../memory/test-corrector.js';
 
 /**
  * Formats test run results and regression reports into Markdown.
@@ -10,6 +11,9 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
   md += `- **Run ID**: ${run.runId}\n`;
   md += `- **Timestamp**: ${run.timestamp}\n`;
   if (run.gitCommit) md += `- **Git Commit**: \`${run.gitCommit}\`\n`;
+  if (run.modelConfig) {
+    md += `- **Models**: navigator=\`${run.modelConfig.navigator}\`, validator=\`${run.modelConfig.validator}\`, reporter=\`${run.modelConfig.reporter}\`, evaluator=\`${run.modelConfig.evaluator}\`\n`;
+  }
   md += `- **Total Tests**: ${run.summary.total}\n`;
   md += `- **Passed**: ${run.summary.passed}\n`;
   md += `- **Failed**: ${run.summary.failed}\n`;
@@ -86,6 +90,24 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
       }
 
       md += `#### Reporter Output\n<details><summary>Click to expand</summary>\n\n${test.agentOutput}\n\n</details>\n\n`;
+    });
+  }
+
+  // Add test definition corrections section if any exist
+  const allCorrections = testCorrectionManager.getAllCorrections();
+  const pendingCorrections = allCorrections.filter(c => !c.applied);
+
+  if (pendingCorrections.length > 0) {
+    md += `## Test Definition Corrections\n\n`;
+    md += `The following corrections are suggested based on repeated test failures:\n\n`;
+
+    pendingCorrections.forEach(c => {
+      const appliedBadge = c.applied ? '✅ Applied' : '⚠️ Pending';
+      md += `### ${appliedBadge} - ${c.correctionType}\n`;
+      md += `- **Test**: \`${c.testId}\`\n`;
+      md += `- **Description**: ${c.description}\n`;
+      md += `- **Section**: ${c.section}\n`;
+      md += `- **Timestamp**: ${c.timestamp}\n\n`;
     });
   }
 

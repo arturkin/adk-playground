@@ -17,5 +17,10 @@ An AI-powered QA agent that uses injected visual indicators to detect and intera
 
 Key differentiators:
 - **No selectors** — visual element detection eliminates the primary source of test flakiness
-- **AI-driven self-correction** — recovers from failures instead of producing false negatives
+- **3-level self-correction** — learns from failures within runs, across runs, and suggests test improvements
+  - Level 1: Within-run retry strategies with alternative approaches
+  - Level 2: Cross-run learning that injects failure insights into future tests
+  - Level 3: Automatic test definition correction suggestions after repeated failures
+- **Model performance tracking** — records which AI models were used for each test run, enabling systematic evaluation and optimization
+- **Continuous learning** — builds a knowledge base of failure patterns and resolutions, improving reliability over time
 - **Versatile** — desktop, mobile, SEO, translations, regression detection, all in one tool

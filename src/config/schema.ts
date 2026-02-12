@@ -28,6 +28,7 @@ export const ConfigSchema = z.object({
   knowledgeBaseDir: z.string().default('./knowledge-base'),
   reportDir: z.string().default('./reports'),
   runHistoryDir: z.string().default('./.qa-runs'),
+  lessonsDir: z.string().default('./.qa-lessons'),
   debug: z.boolean().default(false),
   saveDebugScreenshots: z.boolean().default(false),
 });

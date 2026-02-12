@@ -49,6 +49,8 @@ ANTI-RUBBER-STAMP RULES:
 - A missing element when an assertion expects it to be visible is a FAILURE.
 - CRITICAL RULE: Evaluate the LITERAL TRUTH of each assertion statement. If an assertion says "X is visible" and X is NOT visible, it is FALSE (passed=false). Period.
 
+{validator_failure_context}
+
 Your final message MUST end with exactly one of: PASS, FAIL, or INCONCLUSIVE.`,
     tools: [takeScreenshotTool, recordAssertionTool],
     outputKey: 'validation_result',

@@ -6,7 +6,7 @@ import { discoverTests } from './tests/discovery.js';
 import { runTestSuite, runTestCase } from './tests/runner.js';
 import { parseTestCase } from './tests/parser.js';
 import { getFunctionCalls, stringifyContent } from '@google/adk';
-import { runStore, detectRegressions } from './memory/index.js';
+import { runStore, detectRegressions, lessonStore } from './memory/index.js';
 import { formatMarkdownReport, reportWriter } from './reports/index.js';
 
 const program = new Command();
@@ -39,7 +39,7 @@ program
       const session = await runner.sessionService.createSession({
         appName: 'adk-qa',
         userId: 'cli',
-        state: { 
+        state: {
           task_steps: task,
           url_hint: options.url || '',
           expected_criteria: 'Task completed successfully'
@@ -58,7 +58,7 @@ program
           if (text) {
             console.log(`\x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
           }
-          
+
           const functionCalls = getFunctionCalls(event);
           for (const call of functionCalls) {
             console.log(`  \x1b[33m[Tool: ${call.name}] calling with: ${JSON.stringify(call.args)}\x1b[0m`);
@@ -66,10 +66,10 @@ program
         }
       }
 
-      const sessionDetails = await runner.sessionService.getSession({ 
+      const sessionDetails = await runner.sessionService.getSession({
         appName: 'adk-qa',
         userId: 'cli',
-        sessionId: session.id 
+        sessionId: session.id
       });
       const finalReport = sessionDetails?.state?.['final_report'];
       console.log('\n\x1b[1m--- FINAL REPORT ---\x1b[0m');
@@ -91,6 +91,7 @@ program
   .description('Run automated test suites')
   .option('--test-dir <dir>', 'Directory containing test files', config.testDir)
   .option('--test-file <file>', 'Specific test file to run')
+  .option('--auto-fix', 'Automatically apply test definition corrections', false)
   .action(async (options) => {
     if (!config.apiKey) {
       console.error('Error: GOOGLE_GENAI_API_KEY is not set.');
@@ -118,15 +119,16 @@ program
     }
 
     console.log(`Found ${suite.testCases.length} tests. Starting execution...`);
-    
+    console.log(`Models: navigator=${config.models.navigator}, validator=${config.models.validator}, reporter=${config.models.reporter}, evaluator=${config.models.evaluator}`);
+
     let exitCode = 0;
     try {
       const latestRun = runStore.getLatestRun();
-      const runResult = await runTestSuite(suite, config);
+      const runResult = await runTestSuite(suite, config, { autoFix: options.autoFix });
       runStore.saveRun(runResult);
 
       const regressionReport = detectRegressions(runResult, latestRun);
-      
+
       // Generate and save reports
       const markdownReport = formatMarkdownReport(runResult, regressionReport);
       const mdPath = reportWriter.writeMarkdownReport(markdownReport, runResult.runId);
@@ -160,7 +162,17 @@ program
           console.log(`  - \x1b[1m${i.title}\x1b[0m: ${i.previousStatus} -> \x1b[32m${i.currentStatus}\x1b[0m`);
         });
       }
-      
+
+      // Show active lesson count
+      const activeLessonCount = suite.testCases.reduce((count, testCase) => {
+        const lessons = lessonStore.getActiveLessons(testCase.id);
+        return count + lessons.length;
+      }, 0);
+
+      if (activeLessonCount > 0) {
+        console.log(`\n\x1b[36mℹ️  Active failure lessons: ${activeLessonCount} (will be injected into next run)\x1b[0m`);
+      }
+
       exitCode = (runResult.summary.failed > 0 || regressionReport.regressions.length > 0) ? 1 : 0;
     } catch (error) {
       console.error('Test run failed:', error);

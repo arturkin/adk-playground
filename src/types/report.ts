@@ -1,3 +1,10 @@
+export interface ModelConfig {
+  navigator: string;
+  validator: string;
+  reporter: string;
+  evaluator: string;
+}
+
 export interface BugReport {
   id: string;
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -37,6 +44,7 @@ export interface TestRunResult {
   runId: string;
   timestamp: string;
   gitCommit?: string;
+  modelConfig?: ModelConfig;
   results: TestCaseResult[];
   summary: {
     total: number;

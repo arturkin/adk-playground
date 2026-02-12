@@ -15,6 +15,7 @@ function loadConfig(): AppConfig {
     testDir: process.env.TEST_DIR,
     knowledgeBaseDir: process.env.KNOWLEDGE_BASE_DIR,
     reportDir: process.env.REPORT_DIR,
+    lessonsDir: process.env.LESSONS_DIR,
     debug: process.env.DEBUG === 'true',
   };
 

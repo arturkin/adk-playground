@@ -35,6 +35,14 @@ export function buildNavigatorAgent(config: AppConfig) {
     - If you see a cookie consent banner or popup overlay on the page, dismiss it FIRST before doing anything else. Click "Accept", "Allow all cookies", or the close/X button.
     - This is critical because overlays can block clicks on elements underneath them.
 
+    RETRY STRATEGIES:
+    When you encounter errors, apply these strategies before giving up:
+    - **Element removed/changed**: Take a fresh screenshot to get updated element IDs. DOM changes after interactions are normal.
+    - **Click intercepted by overlay**: Look for cookie banners, popups, modals, or overlays. Dismiss them first, then retry the click.
+    - **Element not in list**: The element may be off-screen. Scroll down or up to reveal it, then take a new screenshot.
+    - **Same approach failed 3+ times**: Try an alternative strategy — use keyboard navigation (Tab + Enter), try a different element with similar purpose, or look for alternative UI paths.
+    - **Cannot proceed**: Call 'task_completed' with a clear failure explanation. NEVER silently skip steps or pretend success.
+
     STRICT RULES:
     - ONLY interact with elements DIRECTLY relevant to the current step.
     - NEVER click an element unless you can explain why it matches the current step.
@@ -44,7 +52,9 @@ export function buildNavigatorAgent(config: AppConfig) {
     - Elements on the screenshot are tagged with red boxes and numerical IDs. Use these IDs to click or type into elements.
     - When ALL steps are completed successfully, call the 'task_completed' tool.
     - Be precise and avoid unnecessary steps.
-    - NEVER ask the user for information — you have everything you need above.`,
+    - NEVER ask the user for information — you have everything you need above.
+
+{failure_lessons}`,
     tools: [
       tools.navigateTool, 
       tools.scrollTool, 

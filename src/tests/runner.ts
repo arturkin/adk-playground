@@ -3,15 +3,20 @@ import { getBrowserManager } from '../browser/index.js';
 import { type AppConfig } from '../config/schema.js';
 import { TestCase, TestSuite } from '../types/test.js';
 import { TestRunResult, TestCaseResult, BugReport } from '../types/report.js';
-import { runStore } from '../memory/index.js';
+import { runStore, lessonStore, analyzeFailure, testCorrectionManager } from '../memory/index.js';
+import { formatLessonsForNavigator, formatLessonsForValidator } from '../memory/lesson-formatter.js';
 import { loadKnowledgeBase } from './discovery.js';
 import { getFunctionCalls, stringifyContent } from '@google/adk';
 import { execSync } from 'child_process';
 
+export interface RunOptions {
+  autoFix?: boolean;
+}
+
 /**
  * Executes a single test case using the multi-agent orchestrator.
  */
-export async function runTestCase(testCase: TestCase, config: AppConfig, runner: ReturnType<typeof createRunner>, runId: string): Promise<TestCaseResult> {
+export async function runTestCase(testCase: TestCase, config: AppConfig, runner: ReturnType<typeof createRunner>, runId: string, options: RunOptions = {}): Promise<TestCaseResult> {
   const startTime = Date.now();
   console.log(`\x1b[1mRunning Test: ${testCase.title}\x1b[0m`);
 
@@ -20,6 +25,11 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
   const browser = getBrowserManager(viewport);
 
     const knowledgeBase = await loadKnowledgeBase(config.knowledgeBaseDir);
+
+    // Load active failure lessons for this test
+    const activeLessons = lessonStore.getActiveLessons(testCase.id);
+    const failureLessons = formatLessonsForNavigator(activeLessons);
+    const validatorFailureContext = formatLessonsForValidator(activeLessons);
 
   try {
     // We launch browser for each test to ensure clean state
@@ -36,6 +46,8 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
         expected_criteria: testCase.expectedOutcome,
         current_viewport: testCase.viewport,
         knowledge_base: knowledgeBase,
+        failure_lessons: failureLessons,
+        validator_failure_context: validatorFailureContext,
         assertion_count: String(testCase.assertions.length),
         test_assertions: `You MUST call record_assertion exactly ${testCase.assertions.length} time(s) — one for each assertion:\n` +
           testCase.assertions.map((a, i) =>
@@ -145,7 +157,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       status = 'inconclusive';
     }
 
-    return {
+    const testResult: TestCaseResult = {
       testId: testCase.id,
       title: testCase.title,
       status,
@@ -156,9 +168,47 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       agentOutput: finalReport,
       validationOutput: validationResult,
     };
+
+    // Record lessons based on test outcome
+    if (status === 'failed') {
+      const prevConsecutiveCount = lessonStore.getConsecutiveFailureCount(testCase.id);
+      const lesson = analyzeFailure(testResult, runId, prevConsecutiveCount);
+      lessonStore.addLesson(lesson);
+      console.log(`  \x1b[33m[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})\x1b[0m`);
+
+      // Check for test definition corrections after threshold
+      const allLessons = lessonStore.getActiveLessons(testCase.id);
+      const corrections = testCorrectionManager.analyzeForCorrections(testCase, allLessons);
+
+      if (corrections.length > 0) {
+        console.log(`  \x1b[33m[Test Corrections] ${corrections.length} suggestion(s) generated:\x1b[0m`);
+        corrections.forEach(c => {
+          console.log(`    - ${c.correctionType}: ${c.description}`);
+        });
+
+        if (options.autoFix) {
+          console.log(`  \x1b[33m[Auto-Fix] Applying corrections...\x1b[0m`);
+          corrections.forEach(c => {
+            try {
+              testCorrectionManager.applyCorrection(c);
+            } catch (e) {
+              console.error(`    Failed to apply correction: ${(e as Error).message}`);
+            }
+          });
+        } else {
+          console.log(`  \x1b[36m[Hint] Use --auto-fix to automatically apply corrections\x1b[0m`);
+        }
+      }
+    } else if (status === 'passed') {
+      lessonStore.markResolved(testCase.id);
+      console.log(`  \x1b[32m[Self-Correction] Previous failures resolved\x1b[0m`);
+    }
+
+    return testResult;
   } catch (error) {
     console.error(`Test failed with error: ${(error as Error).message}`);
-    return {
+
+    const errorResult: TestCaseResult = {
       testId: testCase.id,
       title: testCase.title,
       status: 'error',
@@ -169,6 +219,36 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       agentOutput: '',
       error: (error as Error).message,
     };
+
+    // Record lesson for error status
+    const prevConsecutiveCount = lessonStore.getConsecutiveFailureCount(testCase.id);
+    const lesson = analyzeFailure(errorResult, runId, prevConsecutiveCount);
+    lessonStore.addLesson(lesson);
+    console.log(`  \x1b[33m[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})\x1b[0m`);
+
+    // Check for corrections on error status too
+    const allLessons = lessonStore.getActiveLessons(testCase.id);
+    const corrections = testCorrectionManager.analyzeForCorrections(testCase, allLessons);
+
+    if (corrections.length > 0) {
+      console.log(`  \x1b[33m[Test Corrections] ${corrections.length} suggestion(s) generated:\x1b[0m`);
+      corrections.forEach(c => {
+        console.log(`    - ${c.correctionType}: ${c.description}`);
+      });
+
+      if (options.autoFix) {
+        console.log(`  \x1b[33m[Auto-Fix] Applying corrections...\x1b[0m`);
+        corrections.forEach(c => {
+          try {
+            testCorrectionManager.applyCorrection(c);
+          } catch (e) {
+            console.error(`    Failed to apply correction: ${(e as Error).message}`);
+          }
+        });
+      }
+    }
+
+    return errorResult;
   } finally {
     // Wait for a few seconds if not headless to see the last state
     if (!config.headless) {
@@ -181,14 +261,14 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
 /**
  * Executes a whole test suite.
  */
-export async function runTestSuite(suite: TestSuite, config: AppConfig): Promise<TestRunResult> {
+export async function runTestSuite(suite: TestSuite, config: AppConfig, options: RunOptions = {}): Promise<TestRunResult> {
   const startTime = Date.now();
   const runId = `run-${Date.now()}`;
   const results: TestCaseResult[] = [];
   const runner = createRunner(config);
 
   for (const testCase of suite.testCases) {
-    const result = await runTestCase(testCase, config, runner, runId);
+    const result = await runTestCase(testCase, config, runner, runId, options);
     results.push(result);
   }
 
@@ -209,6 +289,12 @@ export async function runTestSuite(suite: TestSuite, config: AppConfig): Promise
     runId,
     timestamp: new Date().toISOString(),
     gitCommit,
+    modelConfig: {
+      navigator: config.models.navigator,
+      validator: config.models.validator,
+      reporter: config.models.reporter,
+      evaluator: config.models.evaluator,
+    },
     results,
     summary: {
       total: suite.testCases.length,
