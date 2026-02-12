@@ -1,8 +1,9 @@
-import { qaAgentFlow } from "./agent";
-import { launchBrowser, closeBrowser } from "./browser";
+import { config } from "./config/index.js";
+import { qaAgentFlow } from "./agent/index.js";
+import { launchBrowser, closeBrowser } from "./browser/index.js";
 
 async function main() {
-  if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GOOGLE_API_KEY) {
+  if (!config.apiKey) {
     console.error(
       "\x1b[31mError: GOOGLE_GENAI_API_KEY is not set.\x1b[0m\n" +
         "Please create a .env file based on .env.example and set your API key.\n" +
