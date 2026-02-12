@@ -61,6 +61,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
     const validationResult = (sessionDetails?.state?.['validation_result'] as string) || '';
     const finalReport = (sessionDetails?.state?.['final_report'] as string) || '';
     const bugsJson = (sessionDetails?.state?.['temp:bugs'] as string) || '[]';
+    const latestScreenshot = (sessionDetails?.state?.['temp:latest_screenshot'] as string) || '';
     const bugs: BugReport[] = JSON.parse(bugsJson);
     
     const status = validationResult.toUpperCase().includes('PASS') ? 'passed' : 
@@ -72,7 +73,7 @@ export async function runTestCase(testCase: TestCase, config: AppConfig, runner:
       status,
       duration: Date.now() - startTime,
       bugs,
-      screenshots: [], // To be populated in Task 7/8
+      screenshots: latestScreenshot ? [`screenshot_${Date.now()}.png`] : [],
       agentOutput: finalReport,
     };
   } catch (error) {

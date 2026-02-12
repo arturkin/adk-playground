@@ -6,6 +6,8 @@ import { discoverTests } from './tests/discovery.js';
 import { runTestSuite, runTestCase } from './tests/runner.js';
 import { parseTestCase } from './tests/parser.js';
 import { getFunctionCalls, stringifyContent } from '@google/adk';
+import { runStore, detectRegressions } from './memory/index.js';
+import { formatMarkdownReport, reportWriter } from './reports/index.js';
 
 const program = new Command();
 
@@ -118,14 +120,39 @@ program
     console.log(`Found ${suite.testCases.length} tests. Starting execution...`);
     
     try {
+      const latestRun = runStore.getLatestRun();
       const runResult = await runTestSuite(suite, config);
+      runStore.saveRun(runResult);
+
+      const regressionReport = detectRegressions(runResult, latestRun);
       
+      // Generate and save reports
+      const markdownReport = formatMarkdownReport(runResult, regressionReport);
+      const mdPath = reportWriter.writeMarkdownReport(markdownReport, runResult.runId);
+      const jsonPath = reportWriter.writeJsonReport(runResult);
+
       console.log('\n\x1b[1m--- TEST RUN SUMMARY ---\x1b[0m');
       console.log(`Run ID: ${runResult.runId}`);
       console.log(`Total: ${runResult.summary.total}`);
       console.log(`Passed: \x1b[32m${runResult.summary.passed}\x1b[0m`);
       console.log(`Failed: \x1b[31m${runResult.summary.failed}\x1b[0m`);
       console.log(`Duration: ${(runResult.summary.duration / 1000).toFixed(2)}s`);
+      console.log(`Reports: ${mdPath}, ${jsonPath}`);
+
+      if (regressionReport.regressions.length > 0) {
+        console.log('\n\x1b[31m⚠️  REGRESSIONS DETECTED:\x1b[0m');
+        regressionReport.regressions.forEach(r => {
+          console.log(`  - \x1b[1m${r.title}\x1b[0m: ${r.previousStatus} -> \x1b[31m${r.currentStatus}\x1b[0m`);
+          console.log(`    Details: ${r.details}`);
+        });
+      }
+
+      if (regressionReport.improvements.length > 0) {
+        console.log('\n\x1b[32m✨ IMPROVEMENTS DETECTED:\x1b[0m');
+        regressionReport.improvements.forEach(i => {
+          console.log(`  - \x1b[1m${i.title}\x1b[0m: ${i.previousStatus} -> \x1b[32m${i.currentStatus}\x1b[0m`);
+        });
+      }
       
       process.exit(runResult.summary.failed > 0 ? 1 : 0);
     } catch (error) {
