@@ -14,14 +14,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@genkit-ai/ai": "^1.26.0",
-    "@genkit-ai/core": "^1.26.0",
-    "@genkit-ai/dotprompt": "^0.9.12",
-    "@genkit-ai/flow": "^0.5.17",
     "@google/adk": "^0.3.0",
     "@google/genai": "^1.34.0",
     "commander": "^14.0.3",
-    "genkit": "^1.26.0",
     "glob": "^13.0.2",
     "puppeteer": "^22.0.0",
     "winston": "^3.13.0",
