@@ -13,6 +13,11 @@
 4. Choose random dates, few weeks in advance for the 3-7 days duration.
 5. Make sure from and to dates are selected correctly.
 6. Perform Search
+7. Click on any tour card
+8. Wait for product page to open
+9. Add tour to cart
+10. Proceed to checkout
+11. Make sure tour is added to cart and checkout is possible
 
 ## Expected Outcome
 Search results page loads with Tour Cards visible.
