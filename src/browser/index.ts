@@ -49,6 +49,11 @@ export async function tagElements(renderIndex: number = 0) {
   return await tagger.tagElements(page, renderIndex);
 }
 
+export async function clearMarkers() {
+  const page = getBrowserManager().getPage();
+  return await tagger.clearMarkers(page);
+}
+
 export async function clickElement(id: number) {
   const page = getBrowserManager().getPage();
   return await actions.clickElement(page, id);

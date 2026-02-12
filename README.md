@@ -85,6 +85,6 @@ Configuration is managed via environment variables and validated with Zod. See `
 
 - `GOOGLE_GENAI_API_KEY`: Your Gemini API key.
 - `HEADLESS`: Set to `false` to see the browser in action.
-- `NAVIGATOR_MODEL`: LLM for navigation (default: gemini-2.5-flash).
+- `NAVIGATOR_MODEL`: LLM for navigation (default: gemini-3-flash-preview).
 - `TEST_DIR`: Directory for test discovery (default: ./tests).
 - `RUN_HISTORY_DIR`: Where to save run data (default: ./.qa-runs).

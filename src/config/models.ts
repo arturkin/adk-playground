@@ -1,5 +1,5 @@
 export const MODEL_ALIASES = {
-  flash: 'gemini-3-flash-preview',
+  flash: 'gemini-2.5-flash',
   pro: 'gemini-3-pro',
   thinking: 'gemini-2.5-flash-thinking',
 } as const;

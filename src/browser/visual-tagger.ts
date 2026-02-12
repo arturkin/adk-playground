@@ -1,6 +1,17 @@
 import { Page } from "puppeteer";
 
 /**
+ * Removes all visual labels and bounding boxes from the page.
+ */
+export async function clearMarkers(page: Page) {
+  return await page.evaluate(() => {
+    document
+      .querySelectorAll(".ai-marker, .ai-label")
+      .forEach((el) => el.remove());
+  });
+}
+
+/**
  * Injects visual labels and bounding boxes into the page for AI to identify elements.
  * Preserves the core Set-of-Mark logic from the original implementation.
  */

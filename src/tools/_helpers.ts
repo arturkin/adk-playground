@@ -13,8 +13,7 @@ export async function captureBrowserState(toolContext: ToolContext): Promise<num
   const stepCount = Number(toolContext.state.get('step_count') || 0);
   const elements = await tagElements(stepCount);
   const screenshot = await getScreenshot();
-  const url = toolContext.state.get('url_hint') || ''; // Default to hint if available
-
+  
   toolContext.state.set('latest_screenshot', screenshot);
   toolContext.state.set('latest_elements', JSON.stringify(elements));
   toolContext.state.set('step_count', String(stepCount + 1));

@@ -9,10 +9,10 @@ export const ViewportSchema = z.object({
 export const ConfigSchema = z.object({
   apiKey: z.string(),
   models: z.object({
-    navigator: z.string().default('gemini-3-flash-preview'),
-    validator: z.string().default('gemini-3-flash-preview'),
-    reporter: z.string().default('gemini-3-flash-preview'),
-    evaluator: z.string().default('gemini-3-flash-preview'),
+    navigator: z.string().default('gemini-2.5-flash'),
+    validator: z.string().default('gemini-2.5-flash'),
+    reporter: z.string().default('gemini-2.5-flash'),
+    evaluator: z.string().default('gemini-2.5-flash'),
   }),
   headless: z.boolean().default(true),
   viewports: z.array(ViewportSchema).default([
