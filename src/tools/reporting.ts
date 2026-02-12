@@ -17,17 +17,18 @@ export const recordBugTool = new FunctionTool({
   parameters: bugParamsSchema as any,
   execute: async (bug: any, toolContext) => {
     if (!toolContext) throw new Error('ToolContext is required');
-    const bugs = JSON.parse(toolContext.state.get('temp:bugs') || '[]');
+    const bugs = JSON.parse(toolContext.state.get('bugs') || '[]');
     const bugReport = {
       ...bug,
       id: `BUG-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      url: toolContext.state.get('temp:current_url') || 'unknown',
-      viewport: toolContext.state.get('temp:current_viewport') || 'desktop',
+      url: toolContext.state.get('current_url') || 'unknown',
+      viewport: toolContext.state.get('current_viewport') || 'desktop',
+      steps: [],
       screenshots: [`screenshot_${Date.now()}`],
     };
     bugs.push(bugReport);
-    toolContext.state.set('temp:bugs', JSON.stringify(bugs));
+    toolContext.state.set('bugs', JSON.stringify(bugs));
     
     return {
       status: 'success',
@@ -50,13 +51,13 @@ export const recordAssertionTool = new FunctionTool({
   parameters: assertionParamsSchema as any,
   execute: async (assertion: any, toolContext) => {
     if (!toolContext) throw new Error('ToolContext is required');
-    const assertions = JSON.parse(toolContext.state.get('temp:assertions') || '[]');
+    const assertions = JSON.parse(toolContext.state.get('assertions') || '[]');
     const record = {
       ...assertion,
       timestamp: new Date().toISOString(),
     };
     assertions.push(record);
-    toolContext.state.set('temp:assertions', JSON.stringify(assertions));
+    toolContext.state.set('assertions', JSON.stringify(assertions));
     
     return {
       status: 'success',

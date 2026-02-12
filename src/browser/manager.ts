@@ -43,6 +43,7 @@ export class BrowserManager {
     });
 
     this.page = await this.browser.newPage();
+    await this.page.setViewport({ width: this.viewport.width, height: this.viewport.height });
     return { browser: this.browser, page: this.page };
   }
 

@@ -17,6 +17,7 @@ export const navigateTool = new FunctionTool({
     if (!toolContext) throw new Error('ToolContext is required');
     try {
       await navigateTo(url);
+      toolContext.state.set('current_url', url);
       const elementCount = await captureBrowserState(toolContext);
       return {
         status: 'success',

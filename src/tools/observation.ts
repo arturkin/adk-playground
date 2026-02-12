@@ -17,8 +17,8 @@ export const takeScreenshotTool = new FunctionTool({
       const elements = await tagElements(0);
       const screenshot = await getScreenshot();
 
-      toolContext.state.set('temp:latest_screenshot', screenshot);
-      toolContext.state.set('temp:latest_elements', JSON.stringify(elements));
+      toolContext.state.set('latest_screenshot', screenshot);
+      toolContext.state.set('latest_elements', JSON.stringify(elements));
 
       return {
         status: 'success',

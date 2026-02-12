@@ -32,6 +32,22 @@ export class RunStore {
   }
 
   /**
+   * Saves a screenshot to the history directory.
+   */
+  public saveScreenshot(runId: string, filename: string, base64Data: string): string {
+    const screenshotsDir = path.join(this.historyDir, 'screenshots', runId);
+    this.ensureDir(screenshotsDir);
+    const filePath = path.join(screenshotsDir, filename);
+    
+    // Remove data:image/png;base64, prefix if present
+    const base64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
+    
+    fs.writeFileSync(filePath, buffer);
+    return filePath;
+  }
+
+  /**
    * Returns the latest test run result, if available.
    */
   public getLatestRun(): TestRunResult | null {

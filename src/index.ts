@@ -154,10 +154,13 @@ program
         });
       }
       
-      process.exit(runResult.summary.failed > 0 ? 1 : 0);
+      const exitCode = (runResult.summary.failed > 0 || regressionReport.regressions.length > 0) ? 1 : 0;
+      process.exit(exitCode);
     } catch (error) {
       console.error('Test run failed:', error);
       process.exit(1);
+    } finally {
+      await getBrowserManager().close();
     }
   });
 

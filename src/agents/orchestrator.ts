@@ -39,6 +39,6 @@ export class OrchestratorAgent extends BaseAgent {
 
   // OrchestratorAgent is deterministic and doesn't need to implement runLiveImpl
   protected async *runLiveImpl(ctx: InvocationContext): AsyncGenerator<Event> {
-    throw new Error('runLive is not supported for OrchestratorAgent');
+    yield* this.runAsyncImpl(ctx);
   }
 }

@@ -8,8 +8,8 @@ export const injectScreenshotCallback = async ({ context, request }: {
   context: CallbackContext;
   request: LlmRequest;
 }): Promise<LlmResponse | undefined> => {
-  const screenshot = context.state.get('temp:latest_screenshot');
-  const elements = context.state.get('temp:latest_elements');
+  const screenshot = context.state.get('latest_screenshot');
+  const elements = context.state.get('latest_elements');
 
   if (screenshot) {
     // In ADK, we can append to the last message or add a new part
