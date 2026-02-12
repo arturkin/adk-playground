@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "bun src/index.ts",
-    "test:auto": "bun src/index.ts --mode auto",
+    "test:auto": "bun src/index.ts auto --test-dir ./tests",
     "eval": "bun src/evals/index.ts",
     "dev": "npx adk web",
     "build": "tsc",

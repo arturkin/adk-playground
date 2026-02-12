@@ -14,29 +14,30 @@ export class OrchestratorAgent extends BaseAgent {
   private reporter;
 
   constructor(config: AppConfig) {
-    super({ name: 'orchestrator' });
-    this.navigatorLoop = buildNavigatorAgent(config);
-    this.validator = buildValidatorAgent(config);
-    this.reporter = buildReporterAgent(config);
+    const navigatorLoop = buildNavigatorAgent(config);
+    const validator = buildValidatorAgent(config);
+    const reporter = buildReporterAgent(config);
+    super({ 
+      name: 'orchestrator',
+      subAgents: [navigatorLoop, validator, reporter]
+    });
+    this.navigatorLoop = navigatorLoop;
+    this.validator = validator;
+    this.reporter = reporter;
   }
 
   async *runAsyncImpl(ctx: InvocationContext): AsyncGenerator<Event> {
     // Phase 1: Navigate and interact
-    for await (const event of this.navigatorLoop.runAsync(ctx)) {
-      yield event;
-    }
+    yield* this.navigatorLoop.runAsync(ctx);
 
     // Phase 2: Validate outcomes
-    for await (const event of this.validator.runAsync(ctx)) {
-      yield event;
-    }
+    yield* this.validator.runAsync(ctx);
 
     // Phase 3: Generate report
-    for await (const event of this.reporter.runAsync(ctx)) {
-      yield event;
-    }
+    yield* this.reporter.runAsync(ctx);
   }
 
+  // OrchestratorAgent is deterministic and doesn't need to implement runLiveImpl
   protected async *runLiveImpl(ctx: InvocationContext): AsyncGenerator<Event> {
     throw new Error('runLive is not supported for OrchestratorAgent');
   }

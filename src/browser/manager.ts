@@ -15,6 +15,8 @@ export class BrowserManager {
     if (!BrowserManager.instance) {
       BrowserManager.instance = new BrowserManager(viewport);
     } else if (viewport) {
+      // If a new viewport is requested, we update the config.
+      // If browser is already running, we might need to resize existing page.
       BrowserManager.instance.viewport = viewport;
     }
     return BrowserManager.instance;
@@ -22,6 +24,10 @@ export class BrowserManager {
 
   public async launch(headless: boolean = true): Promise<{ browser: Browser; page: Page }> {
     if (this.browser) {
+      // Ensure page matches current viewport if it was changed
+      if (this.page) {
+        await this.page.setViewport({ width: this.viewport.width, height: this.viewport.height });
+      }
       return { browser: this.browser, page: this.page! };
     }
 

@@ -70,7 +70,7 @@ export function parseTestCase(filePath: string): TestCase {
   }
 
   return {
-    id: path.basename(filePath, '.md'),
+    id: path.relative(process.cwd(), filePath),
     title,
     filePath,
     url,

@@ -5,6 +5,7 @@ import { getBrowserManager } from './browser/index.js';
 import { discoverTests } from './tests/discovery.js';
 import { runTestSuite, runTestCase } from './tests/runner.js';
 import { parseTestCase } from './tests/parser.js';
+import { getFunctionCalls, stringifyContent } from '@google/adk';
 
 const program = new Command();
 
@@ -38,7 +39,8 @@ program
         userId: 'cli',
         state: { 
           task_steps: task,
-          url_hint: options.url || ''
+          url_hint: options.url || '',
+          expected_criteria: 'Task completed successfully'
         }
       });
 
@@ -49,26 +51,25 @@ program
         sessionId: session.id,
         newMessage: { role: 'user', parts: [{ text: 'Begin QA task' }] },
       })) {
-        const anyEvent = event as any;
-        if (anyEvent.type === 'agent_start') {
-          console.log(`\x1b[36m[Agent: ${anyEvent.agentName}] Starting...\x1b[0m`);
-        } else if (anyEvent.type === 'tool_call') {
-          console.log(`  \x1b[33m[Tool: ${anyEvent.toolName}] calling with: ${JSON.stringify(anyEvent.args)}\x1b[0m`);
-        } else if (anyEvent.type === 'tool_response') {
-          console.log(`  \x1b[32m[Tool: ${anyEvent.toolName}] responded: ${JSON.stringify(anyEvent.response).substring(0, 100)}...\x1b[0m`);
-        } else if (anyEvent.type === 'agent_end') {
-          console.log(`\x1b[34m[Agent: ${anyEvent.agentName}] finished.\x1b[0m`);
-        } else if (anyEvent.type === 'error') {
-          console.error(`\x1b[31m[Error] ${anyEvent.message}\x1b[0m`);
+        if (event.author && event.author !== 'user') {
+          const text = stringifyContent(event);
+          if (text) {
+            console.log(`\x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
+          }
+          
+          const functionCalls = getFunctionCalls(event);
+          for (const call of functionCalls) {
+            console.log(`  \x1b[33m[Tool: ${call.name}] calling with: ${JSON.stringify(call.args)}\x1b[0m`);
+          }
         }
       }
 
-      const sessionDetails = (await runner.sessionService.getSession({ 
+      const sessionDetails = await runner.sessionService.getSession({ 
         appName: 'adk-qa',
         userId: 'cli',
         sessionId: session.id 
-      })) as any;
-      const finalReport = sessionDetails?.state?.get('final_report');
+      });
+      const finalReport = sessionDetails?.state?.['final_report'];
       console.log('\n\x1b[1m--- FINAL REPORT ---\x1b[0m');
       console.log(typeof finalReport === 'string' ? finalReport : 'No report generated.');
 
