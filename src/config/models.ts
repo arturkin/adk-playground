@@ -1,0 +1,9 @@
+export const MODEL_ALIASES = {
+  flash: 'gemini-2.5-flash',
+  pro: 'gemini-2.5-pro',
+  thinking: 'gemini-2.5-flash-thinking',
+} as const;
+
+export function getModelName(alias: string): string {
+  return (MODEL_ALIASES as any)[alias] || alias;
+}

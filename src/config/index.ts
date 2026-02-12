@@ -1,0 +1,37 @@
+import { ConfigSchema, type AppConfig } from './schema.js';
+import { getModelName } from './models.js';
+
+function loadConfig(): AppConfig {
+  const config = {
+    apiKey: process.env.GOOGLE_GENAI_API_KEY || '',
+    models: {
+      navigator: getModelName(process.env.NAVIGATOR_MODEL || 'flash'),
+      validator: getModelName(process.env.VALIDATOR_MODEL || 'flash'),
+      reporter: getModelName(process.env.REPORTER_MODEL || 'flash'),
+      evaluator: getModelName(process.env.EVALUATOR_MODEL || 'flash'),
+    },
+    headless: process.env.HEADLESS !== 'false',
+    maxNavigationIterations: process.env.MAX_ITERATIONS ? parseInt(process.env.MAX_ITERATIONS) : undefined,
+    testDir: process.env.TEST_DIR,
+    reportDir: process.env.REPORT_DIR,
+    debug: process.env.DEBUG === 'true',
+  };
+
+  // Remove undefined values to let Zod defaults kick in
+  const cleanConfig = Object.fromEntries(
+    Object.entries(config).filter(([_, v]) => v !== undefined)
+  );
+
+  const result = ConfigSchema.safeParse(cleanConfig);
+
+  if (!result.success) {
+    console.error('❌ Invalid configuration:', result.error.format());
+    process.exit(1);
+  }
+
+  return result.data;
+}
+
+export const config = loadConfig();
+export * from './schema.js';
+export * from './models.js';

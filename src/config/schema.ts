@@ -9,10 +9,10 @@ export const ViewportSchema = z.object({
 export const ConfigSchema = z.object({
   apiKey: z.string(),
   models: z.object({
-    navigator: z.string().default('gemini-2.0-flash'),
-    validator: z.string().default('gemini-2.0-flash'),
-    reporter: z.string().default('gemini-2.0-flash'),
-    evaluator: z.string().default('gemini-2.0-flash'),
+    navigator: z.string().default('gemini-2.5-flash'),
+    validator: z.string().default('gemini-2.5-flash'),
+    reporter: z.string().default('gemini-2.5-flash'),
+    evaluator: z.string().default('gemini-2.5-flash'),
   }),
   headless: z.boolean().default(true),
   viewports: z.array(ViewportSchema).default([
@@ -23,7 +23,7 @@ export const ConfigSchema = z.object({
   ]),
   maxNavigationIterations: z.number().default(20),
   screenshotQuality: z.number().default(80),
-  actionDelay: z.number().default(500),
+  actionDelay: z.number().default(2000),
   testDir: z.string().default('./tests'),
   reportDir: z.string().default('./reports'),
   runHistoryDir: z.string().default('./.qa-runs'),
