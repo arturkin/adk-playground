@@ -7,10 +7,12 @@
 - **priority**: medium
 
 ## Steps
-1. Navigate to the homepage
-2. Go to the Tours Tab
-3. Choose any random dates in the date range picker, few weeks in advance
-4. Perform Search
+1. Locate search widget
+2. In search widget, locate date picker with label "Starting date" and press it.
+3. Locate date picker pop up
+4. Choose random dates, few weeks in advance for the 3-7 days duration.
+5. Make sure from and to dates are selected correctly.
+6. Perform Search
 
 ## Expected Outcome
 Search results page loads with Tour Cards visible.

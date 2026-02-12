@@ -22,7 +22,7 @@ export const injectScreenshotCallback = async ({ context, request }: {
     // Add screenshot as an image part
     lastMessage.parts.push({
       inlineData: {
-        mimeType: 'image/png',
+        mimeType: 'image/jpeg',
         data: screenshot as string,
       },
     });
