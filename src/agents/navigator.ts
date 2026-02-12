@@ -28,6 +28,7 @@ export function buildNavigatorAgent(config: AppConfig) {
       tools.navigateTool, 
       tools.scrollTool, 
       tools.clickElementTool, 
+      tools.hoverElementTool,
       tools.typeElementTool, 
       tools.pressKeyTool, 
       tools.taskCompletedTool

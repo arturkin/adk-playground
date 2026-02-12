@@ -1,6 +1,6 @@
 import { FunctionTool, type ToolContext } from '@google/adk';
 import { z } from 'zod';
-import { clickElement, typeElement, pressKey } from '../browser/index.js';
+import { clickElement, typeElement, pressKey, hoverElement } from '../browser/index.js';
 import { captureBrowserState } from './_helpers.js';
 
 
@@ -27,6 +27,29 @@ export const clickElementTool = new FunctionTool({
       return {
         status: 'error',
         message: `Failed to click element #${id}: ${(e as Error).message}`,
+      };
+    }
+  },
+});
+
+export const hoverElementTool = new FunctionTool({
+  name: 'hover_element',
+  description: 'Hovers over an element using its visual ID and captures a screenshot.',
+  parameters: clickParamsSchema as any, // Reuse clickParamsSchema as it also just needs an 'id'
+  execute: async ({ id }: any, toolContext) => {
+    if (!toolContext) throw new Error('ToolContext is required');
+    try {
+      await hoverElement(id);
+      const elementCount = await captureBrowserState(toolContext);
+      return {
+        status: 'success',
+        message: `Hovered over element #${id}`,
+        elementCount,
+      };
+    } catch (e) {
+      return {
+        status: 'error',
+        message: `Failed to hover over element #${id}: ${(e as Error).message}`,
       };
     }
   },

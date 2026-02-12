@@ -39,6 +39,11 @@ export async function clickAt(x: number, y: number) {
   return await actions.clickAt(page, x, y);
 }
 
+export async function hoverElement(id: number) {
+  const page = getBrowserManager().getPage();
+  return await actions.hoverElement(page, id);
+}
+
 export async function tagElements(renderIndex: number = 0) {
   const page = getBrowserManager().getPage();
   return await tagger.tagElements(page, renderIndex);

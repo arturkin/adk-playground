@@ -18,6 +18,20 @@ export async function clickAt(page: Page, x: number, y: number) {
   await page.mouse.click(x, y);
 }
 
+export async function hoverElement(page: Page, id: number) {
+  await page.evaluate((id) => {
+    const el = (window as any).aiElementMap[id];
+    if (!el) throw new Error(`Element ${id} not found`);
+    el.scrollIntoView({ behavior: 'instant', block: 'center' });
+  }, id);
+  const rect = await page.evaluate((id) => {
+    const el = (window as any).aiElementMap[id];
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }, id);
+  await page.mouse.move(rect.x, rect.y);
+}
+
 export async function clickElement(page: Page, id: number) {
   await page.evaluate((id) => {
     const el = (window as any).aiElementMap[id];
