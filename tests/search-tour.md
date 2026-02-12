@@ -25,3 +25,6 @@ Search results page loads with Tour Cards visible.
 ## Assertions
 - [ ] Search results page is displayed
 - [ ] At least one Tour Card is visible
+- [ ] Test opens up Tour product page
+- [ ] Test add Tour product to cart
+- [ ] Test proceeds to checkout

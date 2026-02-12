@@ -1,10 +1,11 @@
 import { Page } from "puppeteer";
+import { robustEvaluate } from "./utils.js";
 
 /**
  * Removes all visual labels and bounding boxes from the page.
  */
 export async function clearMarkers(page: Page) {
-  return await page.evaluate(() => {
+  return await robustEvaluate(page, () => {
     document
       .querySelectorAll(".ai-marker, .ai-label")
       .forEach((el) => el.remove());
@@ -16,7 +17,7 @@ export async function clearMarkers(page: Page) {
  * Preserves the core Set-of-Mark logic from the original implementation.
  */
 export async function tagElements(page: Page, renderIndex: number = 0) {
-  return await page.evaluate((renderIndex) => {
+  return await robustEvaluate(page, (renderIndex) => {
     // FORCE SINGLE TAB: Remove target="_blank" from links to keep navigation in the same tab
     document.querySelectorAll("a[target]").forEach((el) => {
       if (el.getAttribute("target") === "_blank") {

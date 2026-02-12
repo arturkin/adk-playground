@@ -25,3 +25,6 @@ Search results page loads with Car Rental Cards visible.
 ## Assertions
 - [ ] Search results page is displayed
 - [ ] At least one Car Rental Card is visible
+- [ ] Test opens up Car product page
+- [ ] Test add Car product to cart
+- [ ] Test proceeds to checkout
