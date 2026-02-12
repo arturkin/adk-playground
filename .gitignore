@@ -140,5 +140,5 @@ vite.config.ts.timestamp-*
 
 debug
 .qa-runs/
-reports/
+./reports/
 dist/
