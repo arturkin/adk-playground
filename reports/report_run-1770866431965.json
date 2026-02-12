@@ -1,0 +1,24 @@
+{
+  "runId": "run-1770866431965",
+  "timestamp": "2026-02-12T03:20:54.657Z",
+  "gitCommit": "d08ae33fc1aef06cf13430454efd58faf8331460",
+  "results": [
+    {
+      "testId": "tests/search-tour.md",
+      "title": "Search Tour",
+      "status": "inconclusive",
+      "duration": 22462,
+      "bugs": [],
+      "screenshots": [
+        "screenshot_1770866454425.png"
+      ],
+      "agentOutput": "No bugs were found during the execution of the automated test."
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 0,
+    "duration": 22666
+  }
+}

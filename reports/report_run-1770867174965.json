@@ -1,0 +1,33 @@
+{
+  "runId": "run-1770867174965",
+  "timestamp": "2026-02-12T03:33:09.515Z",
+  "gitCommit": "8eeae120a0974872d6363e748035f338f9c474ce",
+  "results": [
+    {
+      "testId": "tests/search-tour.md",
+      "title": "Search Tour",
+      "status": "inconclusive",
+      "duration": 7603,
+      "bugs": [],
+      "screenshots": [],
+      "agentOutput": ""
+    },
+    {
+      "testId": "tests/search-car-rental.md",
+      "title": "Search Car Rental",
+      "status": "inconclusive",
+      "duration": 6785,
+      "bugs": [],
+      "screenshots": [],
+      "agentOutput": ""
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 0,
+    "failed": 0,
+    "inconclusive": 2,
+    "errors": 0,
+    "duration": 14512
+  }
+}
