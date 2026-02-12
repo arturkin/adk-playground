@@ -84,7 +84,7 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
         height: `${rect.height}px`,
         border: "2px solid #FF0000",
         backgroundColor: "transparent",
-        zIndex: "9998",
+        zIndex: "2147483647",
         pointerEvents: "none",
         boxSizing: "border-box",
       });
@@ -135,7 +135,7 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
         left: `${left}px`,
         top: `${top}px`,
         transform: transform,
-        zIndex: "9999",
+        zIndex: "2147483647",
         backgroundColor: "#FF0000",
         color: "#FFFFFF",
         padding: "2px 4px",
