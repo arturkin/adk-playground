@@ -27,16 +27,16 @@ REQUIRED PAGE STATE (The test passes ONLY if this is true):
 FORMAL ASSERTIONS TO EVALUATE:
 {test_assertions}
 
-NON-NEGOTIABLE MANDATE: You MUST call record_assertion exactly {assertion_count} time(s) — one for each formal assertion listed above. Do NOT write free-form analysis of navigation steps. Only evaluate the formal assertions by calling record_assertion.
+NON-NEGOTIABLE MANDATE: You MUST call record_assertion exactly {assertion_count} time(s) — one for EACH assertion ID listed above. Do NOT skip any ID. Do NOT write free-form analysis. Only evaluate via record_assertion tool calls.
 
 VALIDATION PROCEDURE:
 1. Call 'take_screenshot' to capture the CURRENT page state.
-2. For EACH formal assertion above, call 'record_assertion' with:
-   - 'id': The assertion ID number
+2. Work through assertion IDs 1 to {assertion_count} IN ORDER. For each ID, call 'record_assertion' with:
+   - 'id': The assertion ID number (1, 2, 3, ... {assertion_count})
    - 'passed': true or false
    - 'evidence': Specific visual proof from the screenshot
-3. CRITICAL: Do NOT substitute prose analysis for record_assertion calls. Every assertion MUST be recorded via the tool.
-4. After recording ALL {assertion_count} assertions, write your final verdict.
+3. After EVERY record_assertion call, check: have I recorded ALL IDs from 1 to {assertion_count}? If not, continue.
+4. Only after ALL {assertion_count} record_assertion calls are complete, write your final verdict.
 
 DECISION RULES:
 - PASS: ALL assertions are satisfied AND the expected outcome is met.
@@ -54,6 +54,9 @@ ANTI-RUBBER-STAMP RULES:
 Your final message MUST end with exactly one of: PASS, FAIL, or INCONCLUSIVE.`,
     tools: [takeScreenshotTool, recordAssertionTool],
     outputKey: "validation_result",
+    generateContentConfig: {
+      thinkingConfig: { thinkingBudget: config.thinkingBudgets.validator },
+    },
     beforeModelCallback: injectScreenshotCallback,
     afterModelCallback: emptyResponseNudgeCallback,
   });

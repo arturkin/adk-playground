@@ -150,6 +150,7 @@ export async function runTestCase(
 
     // Signal 2: recorded assertions
     const hasAssertions = assertions.length > 0;
+    const expectedAssertionCount = testCase.assertions.length;
     const allAssertionsPassed =
       hasAssertions &&
       assertions.every((a: any) => {
@@ -161,10 +162,11 @@ export async function runTestCase(
             original.description.trim().toLowerCase()
         );
       });
-    const anyAssertionFailed =
-      hasAssertions &&
-      (assertions.some((a: any) => a.passed === false) ||
-        assertions.length < testCase.assertions.length);
+    const someExplicitlyFailed = hasAssertions && assertions.some((a: any) => a.passed === false);
+    const assertionsMissing = assertions.length < expectedAssertionCount;
+    // Only treat missing as failed when at least one was also explicitly failed,
+    // or when none were recorded at all. Missing-but-all-passing = inconclusive.
+    const anyAssertionFailed = someExplicitlyFailed;
 
     // Signal 3: bugs found (structural safeguard)
     const hasSeriousBugs = bugs.some((b: BugReport) =>
@@ -172,7 +174,6 @@ export async function runTestCase(
     );
 
     // Signal 4: test expects assertions but none were recorded
-    const expectedAssertionCount = testCase.assertions.length;
     const noAssertionsRecorded =
       expectedAssertionCount > 0 && assertions.length === 0;
 
@@ -181,15 +182,12 @@ export async function runTestCase(
       status = "failed";
       if (validatorSaysFail && anyAssertionFailed) {
         const failedCount = assertions.filter((a: any) => !a.passed).length;
-        statusReason = `Validator said FAIL + ${failedCount} assertion(s) failed`;
+        statusReason = `Validator said FAIL + ${failedCount} assertion(s) explicitly failed`;
       } else if (validatorSaysFail) {
         statusReason = "Validator explicitly said FAIL";
       } else {
         const failedCount = assertions.filter((a: any) => !a.passed).length;
-        const missing = testCase.assertions.length - assertions.length;
-        statusReason = missing > 0
-          ? `${failedCount} assertion(s) failed, ${missing} not recorded`
-          : `${failedCount} assertion(s) failed`;
+        statusReason = `${failedCount} assertion(s) explicitly failed`;
       }
     } else if (hasSeriousBugs) {
       status = "failed";
@@ -199,14 +197,21 @@ export async function runTestCase(
       // Validator produced no output at all — we don't know the outcome
       status = "inconclusive";
       statusReason = `Validator recorded 0/${expectedAssertionCount} expected assertions — validator may have failed silently (empty model response?)`;
-    } else if (validatorSaysPass && (!hasAssertions || allAssertionsPassed)) {
+    } else if (validatorSaysPass && allAssertionsPassed && !assertionsMissing) {
       status = "passed";
-      statusReason = hasAssertions
-        ? `All ${assertions.length}/${expectedAssertionCount} assertions passed + validator confirmed PASS`
-        : "Validator confirmed PASS";
-    } else if (hasAssertions && allAssertionsPassed) {
+      statusReason = `All ${assertions.length}/${expectedAssertionCount} assertions passed + validator confirmed PASS`;
+    } else if (validatorSaysPass && !hasAssertions) {
+      status = "passed";
+      statusReason = "Validator confirmed PASS";
+    } else if (allAssertionsPassed && !assertionsMissing) {
       status = "passed";
       statusReason = `All ${assertions.length}/${expectedAssertionCount} assertions passed`;
+    } else if (hasAssertions && allAssertionsPassed && assertionsMissing) {
+      // Recorded assertions all passed but validator didn't cover every assertion.
+      // We can't confirm pass without full coverage — inconclusive, not failed.
+      status = "inconclusive";
+      const missing = expectedAssertionCount - assertions.length;
+      statusReason = `${assertions.length}/${expectedAssertionCount} assertions passed, ${missing} not recorded by validator`;
     } else if (!validationResult && !hasAssertions) {
       status = "inconclusive";
       statusReason = "No validation output and no assertions recorded";

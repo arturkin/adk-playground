@@ -10,6 +10,14 @@ function loadConfig(): AppConfig {
       reporter: getModelName(process.env.REPORTER_MODEL || "flash"),
       evaluator: getModelName(process.env.EVALUATOR_MODEL || "flash"),
     },
+    thinkingBudgets: {
+      navigator: process.env.NAVIGATOR_THINKING_BUDGET !== undefined
+        ? parseInt(process.env.NAVIGATOR_THINKING_BUDGET) : undefined,
+      validator: process.env.VALIDATOR_THINKING_BUDGET !== undefined
+        ? parseInt(process.env.VALIDATOR_THINKING_BUDGET) : undefined,
+      reporter: process.env.REPORTER_THINKING_BUDGET !== undefined
+        ? parseInt(process.env.REPORTER_THINKING_BUDGET) : undefined,
+    },
     headless: process.env.HEADLESS !== "false",
     maxNavigationIterations: process.env.MAX_ITERATIONS
       ? parseInt(process.env.MAX_ITERATIONS)

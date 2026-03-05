@@ -65,6 +65,9 @@ export function buildNavigatorAgent(config: AppConfig) {
       tools.taskCompletedTool,
     ],
     outputKey: "navigation_result",
+    generateContentConfig: {
+      thinkingConfig: { thinkingBudget: config.thinkingBudgets.navigator },
+    },
     beforeModelCallback: injectScreenshotCallback,
     afterModelCallback: emptyResponseNudgeCallback,
   });

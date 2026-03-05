@@ -28,6 +28,9 @@ Your task:
 Format the report for an engineering team.`,
     tools: [recordBugTool],
     outputKey: "final_report",
+    generateContentConfig: {
+      thinkingConfig: { thinkingBudget: config.thinkingBudgets.reporter },
+    },
     afterModelCallback: emptyResponseNudgeCallback,
   });
 }

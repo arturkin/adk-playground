@@ -57,7 +57,9 @@ export class BrowserManager {
       },
     });
 
-    this.page = await this.browser.newPage();
+    // Reuse the blank tab Chrome opens on launch instead of creating a second one
+    const existingPages = await this.browser.pages();
+    this.page = existingPages[0] ?? await this.browser.newPage();
     await this.page.setViewport({
       width: this.viewport.width,
       height: this.viewport.height,
