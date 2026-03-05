@@ -139,6 +139,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 debug
+.qa-lessons/
 .qa-runs/
 ./reports/
 dist/

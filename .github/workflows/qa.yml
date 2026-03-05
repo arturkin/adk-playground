@@ -26,6 +26,17 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Restore QA Memory
+        uses: actions/cache@v4
+        with:
+          path: |
+            .qa-lessons
+            .qa-runs/latest.json
+          key: qa-memory-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            qa-memory-${{ github.ref_name }}-
+            qa-memory-main-
+
       - name: Run Automated QA
         run: bun run test:auto
         env:
