@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { TestRunResult } from '../types/report.js';
-import { config } from '../config/index.js';
+import fs from "fs";
+import path from "path";
+import { TestRunResult } from "../types/report.js";
+import { config } from "../config/index.js";
 
 /**
  * Handles writing reports to the file system.

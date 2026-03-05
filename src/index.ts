@@ -1,29 +1,29 @@
-import { Command } from 'commander';
-import { config } from './config/index.js';
-import { createRunner } from './agents/index.js';
-import { getBrowserManager } from './browser/index.js';
-import { discoverTests } from './tests/discovery.js';
-import { runTestSuite, runTestCase } from './tests/runner.js';
-import { parseTestCase } from './tests/parser.js';
-import { getFunctionCalls, stringifyContent } from '@google/adk';
-import { runStore, detectRegressions, lessonStore } from './memory/index.js';
-import { formatMarkdownReport, reportWriter } from './reports/index.js';
+import { Command } from "commander";
+import { config } from "./config/index.js";
+import { createRunner } from "./agents/index.js";
+import { getBrowserManager } from "./browser/index.js";
+import { discoverTests } from "./tests/discovery.js";
+import { runTestSuite, runTestCase } from "./tests/runner.js";
+import { parseTestCase } from "./tests/parser.js";
+import { getFunctionCalls, stringifyContent } from "@google/adk";
+import { runStore, detectRegressions, lessonStore } from "./memory/index.js";
+import { formatMarkdownReport, reportWriter } from "./reports/index.js";
 
 const program = new Command();
 
 program
-  .name('adk-qa')
-  .description('AI-powered QA automation tool')
-  .version('0.1.0');
+  .name("adk-qa")
+  .description("AI-powered QA automation tool")
+  .version("0.1.0");
 
 program
-  .command('manual')
-  .description('Run a manual QA task')
-  .argument('<task>', 'Description of the QA task to perform')
-  .option('--url <url>', 'Initial URL to start from')
+  .command("manual")
+  .description("Run a manual QA task")
+  .argument("<task>", "Description of the QA task to perform")
+  .option("--url <url>", "Initial URL to start from")
   .action(async (task, options) => {
     if (!config.apiKey) {
-      console.error('Error: GOOGLE_GENAI_API_KEY is not set.');
+      console.error("Error: GOOGLE_GENAI_API_KEY is not set.");
       process.exit(1);
     }
 
@@ -37,46 +37,58 @@ program
       await browser.launch(config.headless);
 
       const session = await runner.sessionService.createSession({
-        appName: 'adk-qa',
-        userId: 'cli',
+        appName: "adk-qa",
+        userId: "cli",
         state: {
           task_steps: task,
-          url_hint: options.url || '',
-          expected_criteria: 'Task completed successfully'
-        }
+          url_hint: options.url || "",
+          expected_criteria: "Task completed successfully",
+        },
       });
 
       console.log(`Session created: ${session.id}`);
 
       for await (const event of runner.runAsync({
-        userId: 'cli',
+        userId: "cli",
         sessionId: session.id,
-        newMessage: { role: 'user', parts: [{ text: `Execute this QA task: ${task}\nTarget URL: ${options.url || 'See task description'}` }] },
+        newMessage: {
+          role: "user",
+          parts: [
+            {
+              text: `Execute this QA task: ${task}\nTarget URL: ${options.url || "See task description"}`,
+            },
+          ],
+        },
       })) {
-        if (event.author && event.author !== 'user') {
+        if (event.author && event.author !== "user") {
           const text = stringifyContent(event);
           if (text) {
-            console.log(`\x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
+            console.log(
+              `\x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 100)}${text.length > 100 ? "..." : ""}`,
+            );
           }
 
           const functionCalls = getFunctionCalls(event);
           for (const call of functionCalls) {
-            console.log(`  \x1b[33m[Tool: ${call.name}] calling with: ${JSON.stringify(call.args)}\x1b[0m`);
+            console.log(
+              `  \x1b[33m[Tool: ${call.name}] calling with: ${JSON.stringify(call.args)}\x1b[0m`,
+            );
           }
         }
       }
 
       const sessionDetails = await runner.sessionService.getSession({
-        appName: 'adk-qa',
-        userId: 'cli',
-        sessionId: session.id
+        appName: "adk-qa",
+        userId: "cli",
+        sessionId: session.id,
       });
-      const finalReport = sessionDetails?.state?.['final_report'];
-      console.log('\n\x1b[1m--- FINAL REPORT ---\x1b[0m');
-      console.log(typeof finalReport === 'string' ? finalReport : 'No report generated.');
-
+      const finalReport = sessionDetails?.state?.["final_report"];
+      console.log("\n\x1b[1m--- FINAL REPORT ---\x1b[0m");
+      console.log(
+        typeof finalReport === "string" ? finalReport : "No report generated.",
+      );
     } catch (error) {
-      console.error('Task failed:', error);
+      console.error("Task failed:", error);
     } finally {
       // Wait for a few seconds if not headless to see the last state
       if (!config.headless) {
@@ -87,14 +99,18 @@ program
   });
 
 program
-  .command('auto')
-  .description('Run automated test suites')
-  .option('--test-dir <dir>', 'Directory containing test files', config.testDir)
-  .option('--test-file <file>', 'Specific test file to run')
-  .option('--auto-fix', 'Automatically apply test definition corrections', false)
+  .command("auto")
+  .description("Run automated test suites")
+  .option("--test-dir <dir>", "Directory containing test files", config.testDir)
+  .option("--test-file <file>", "Specific test file to run")
+  .option(
+    "--auto-fix",
+    "Automatically apply test definition corrections",
+    false,
+  )
   .action(async (options) => {
     if (!config.apiKey) {
-      console.error('Error: GOOGLE_GENAI_API_KEY is not set.');
+      console.error("Error: GOOGLE_GENAI_API_KEY is not set.");
       process.exit(1);
     }
 
@@ -103,7 +119,7 @@ program
       console.log(`Running single test file: ${options.testFile}`);
       try {
         const testCase = parseTestCase(options.testFile);
-        suite = { name: 'Single Test', testCases: [testCase] };
+        suite = { name: "Single Test", testCases: [testCase] };
       } catch (e) {
         console.error(`Failed to parse test file: ${(e as Error).message}`);
         process.exit(1);
@@ -114,52 +130,67 @@ program
     }
 
     if (suite.testCases.length === 0) {
-      console.log('No tests found.');
+      console.log("No tests found.");
       process.exit(0);
     }
 
     console.log(`Found ${suite.testCases.length} tests. Starting execution...`);
-    console.log(`Models: navigator=${config.models.navigator}, validator=${config.models.validator}, reporter=${config.models.reporter}, evaluator=${config.models.evaluator}`);
+    console.log(
+      `Models: navigator=${config.models.navigator}, validator=${config.models.validator}, reporter=${config.models.reporter}, evaluator=${config.models.evaluator}`,
+    );
 
     let exitCode = 0;
     try {
       const latestRun = runStore.getLatestRun();
-      const runResult = await runTestSuite(suite, config, { autoFix: options.autoFix });
+      const runResult = await runTestSuite(suite, config, {
+        autoFix: options.autoFix,
+      });
       runStore.saveRun(runResult);
 
       const regressionReport = detectRegressions(runResult, latestRun);
 
       // Generate and save reports
       const markdownReport = formatMarkdownReport(runResult, regressionReport);
-      const mdPath = reportWriter.writeMarkdownReport(markdownReport, runResult.runId);
+      const mdPath = reportWriter.writeMarkdownReport(
+        markdownReport,
+        runResult.runId,
+      );
       const jsonPath = reportWriter.writeJsonReport(runResult);
 
-      console.log('\n\x1b[1m--- TEST RUN SUMMARY ---\x1b[0m');
+      console.log("\n\x1b[1m--- TEST RUN SUMMARY ---\x1b[0m");
       console.log(`Run ID: ${runResult.runId}`);
       console.log(`Total: ${runResult.summary.total}`);
       console.log(`Passed: \x1b[32m${runResult.summary.passed}\x1b[0m`);
       console.log(`Failed: \x1b[31m${runResult.summary.failed}\x1b[0m`);
       if (runResult.summary.inconclusive > 0) {
-        console.log(`Inconclusive: \x1b[33m${runResult.summary.inconclusive}\x1b[0m`);
+        console.log(
+          `Inconclusive: \x1b[33m${runResult.summary.inconclusive}\x1b[0m`,
+        );
       }
       if (runResult.summary.errors > 0) {
         console.log(`Errors: \x1b[31m${runResult.summary.errors}\x1b[0m`);
       }
-      console.log(`Duration: ${(runResult.summary.duration / 1000).toFixed(2)}s`);
+      console.log(
+        `Duration: ${(runResult.summary.duration / 1000).toFixed(2)}s`,
+      );
       console.log(`Reports: ${mdPath}, ${jsonPath}`);
 
       if (regressionReport.regressions.length > 0) {
-        console.log('\n\x1b[31m⚠️  REGRESSIONS DETECTED:\x1b[0m');
-        regressionReport.regressions.forEach(r => {
-          console.log(`  - \x1b[1m${r.title}\x1b[0m: ${r.previousStatus} -> \x1b[31m${r.currentStatus}\x1b[0m`);
+        console.log("\n\x1b[31m⚠️  REGRESSIONS DETECTED:\x1b[0m");
+        regressionReport.regressions.forEach((r) => {
+          console.log(
+            `  - \x1b[1m${r.title}\x1b[0m: ${r.previousStatus} -> \x1b[31m${r.currentStatus}\x1b[0m`,
+          );
           console.log(`    Details: ${r.details}`);
         });
       }
 
       if (regressionReport.improvements.length > 0) {
-        console.log('\n\x1b[32m✨ IMPROVEMENTS DETECTED:\x1b[0m');
-        regressionReport.improvements.forEach(i => {
-          console.log(`  - \x1b[1m${i.title}\x1b[0m: ${i.previousStatus} -> \x1b[32m${i.currentStatus}\x1b[0m`);
+        console.log("\n\x1b[32m✨ IMPROVEMENTS DETECTED:\x1b[0m");
+        regressionReport.improvements.forEach((i) => {
+          console.log(
+            `  - \x1b[1m${i.title}\x1b[0m: ${i.previousStatus} -> \x1b[32m${i.currentStatus}\x1b[0m`,
+          );
         });
       }
 
@@ -170,12 +201,17 @@ program
       }, 0);
 
       if (activeLessonCount > 0) {
-        console.log(`\n\x1b[36mℹ️  Active failure lessons: ${activeLessonCount} (will be injected into next run)\x1b[0m`);
+        console.log(
+          `\n\x1b[36mℹ️  Active failure lessons: ${activeLessonCount} (will be injected into next run)\x1b[0m`,
+        );
       }
 
-      exitCode = (runResult.summary.failed > 0 || regressionReport.regressions.length > 0) ? 1 : 0;
+      exitCode =
+        runResult.summary.failed > 0 || regressionReport.regressions.length > 0
+          ? 1
+          : 0;
     } catch (error) {
-      console.error('Test run failed:', error);
+      console.error("Test run failed:", error);
       exitCode = 1;
     } finally {
       await getBrowserManager().close();

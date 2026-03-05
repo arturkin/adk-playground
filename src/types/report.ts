@@ -7,8 +7,8 @@ export interface ModelConfig {
 
 export interface BugReport {
   id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  category: 'functional' | 'visual' | 'seo' | 'accessibility' | 'translation';
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  category: "functional" | "visual" | "seo" | "accessibility" | "translation";
   title: string;
   description: string;
   url: string;
@@ -30,7 +30,7 @@ export interface AssertionResult {
 export interface TestCaseResult {
   testId: string;
   title: string;
-  status: 'passed' | 'failed' | 'inconclusive' | 'error';
+  status: "passed" | "failed" | "inconclusive" | "error";
   duration: number;
   bugs: BugReport[];
   assertions: AssertionResult[];

@@ -27,9 +27,7 @@
           "url": "https://guidetoiceland.is",
           "viewport": "desktop",
           "steps": [],
-          "screenshots": [
-            "screenshot_1770937721888"
-          ]
+          "screenshots": ["screenshot_1770937721888"]
         }
       ],
       "assertions": [
@@ -41,9 +39,7 @@
           "timestamp": "2026-02-12T23:08:39.084Z"
         }
       ],
-      "screenshots": [
-        "screenshot_1770937722449.png"
-      ],
+      "screenshots": ["screenshot_1770937722449.png"],
       "agentOutput": "The website `https://guidetoiceland.is` is inaccessible due to an HTTP ERROR 406, preventing the execution of the \"Search Tour\" automated test. I have recorded a critical bug for this issue.",
       "validationOutput": "The website `https://guidetoiceland.is` is currently returning an HTTP ERROR 406. I am unable to access the page and therefore cannot proceed with the automated test. The task cannot be completed due to the website being inaccessible.\n\nI have recorded an assertion to reflect this critical failure. Since the website is down, I cannot proceed with any of the requested test steps."
     }

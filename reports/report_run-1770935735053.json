@@ -27,15 +27,11 @@
           "url": "https://guidetoiceland.is/book-trips-holiday",
           "viewport": "desktop",
           "steps": [],
-          "screenshots": [
-            "screenshot_1770936008642"
-          ]
+          "screenshots": ["screenshot_1770936008642"]
         }
       ],
       "assertions": [],
-      "screenshots": [
-        "screenshot_1770936009499.png"
-      ],
+      "screenshots": ["screenshot_1770936009499.png"],
       "agentOutput": "A bug has been recorded with ID **BUG-1770936008640**. The issue is that clicking on tour cards after applying date filters leads to a \"404 - Page not found\" error, preventing access to tour product pages. This has been classified as a critical functional bug.",
       "validationOutput": ""
     },
@@ -57,15 +53,11 @@
           "url": "https://guidetoiceland.is",
           "viewport": "desktop",
           "steps": [],
-          "screenshots": [
-            "screenshot_1770936039471"
-          ]
+          "screenshots": ["screenshot_1770936039471"]
         }
       ],
       "assertions": [],
-      "screenshots": [
-        "screenshot_1770936040456.png"
-      ],
+      "screenshots": ["screenshot_1770936040456.png"],
       "agentOutput": "The automated test for \"Search Car Rental\" could not be executed because the target URL `https://guidetoiceland.is` repeatedly returned an \"HTTP ERROR 406\". A critical bug has been recorded for this issue.",
       "validationOutput": "\nThe automated test for \"Search Car Rental\" cannot be executed as the target URL `https://guidetoiceland.is` repeatedly returned an \"HTTP ERROR 406\". The page did not load, making it impossible to perform any of the outlined test steps. I was unable to record a formal assertion of failure as no assertion IDs were provided in the test plan."
     }

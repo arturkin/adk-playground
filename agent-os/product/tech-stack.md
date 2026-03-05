@@ -8,6 +8,10 @@
 ## AI / LLM
 
 - **Google Gemini** — Primary LLM provider
+  - `gemini-2.5-flash` (default) — fast, cost-efficient
+  - `gemini-3-flash` — latest generation (streaming+tools fix pending ADK issue #4090)
+  - `gemini-3.1-flash-lite` — cost-optimised, released 2026-03-03
+  - `gemini-2.5-pro` — highest capability
 - **Google Agent Development Kit (ADK)** — Multi-agent orchestration framework
 - Configurable to support additional LLM providers per step
 

@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { FailureLesson } from '../types/lessons.js';
-import { config } from '../config/index.js';
+import fs from "fs";
+import path from "path";
+import { FailureLesson } from "../types/lessons.js";
+import { config } from "../config/index.js";
 
 /**
  * Handles persistence of failure lessons to the file system.
@@ -12,7 +12,7 @@ export class LessonStore {
 
   constructor(lessonsDir: string = config.lessonsDir) {
     this.lessonsDir = path.resolve(process.cwd(), lessonsDir);
-    this.lessonsFile = path.join(this.lessonsDir, 'lessons.json');
+    this.lessonsFile = path.join(this.lessonsDir, "lessons.json");
     this.ensureDir(this.lessonsDir);
   }
 
@@ -22,8 +22,11 @@ export class LessonStore {
   public getActiveLessons(testId: string): FailureLesson[] {
     const allLessons = this.getAllLessons();
     return allLessons
-      .filter(lesson => lesson.testId === testId && !lesson.resolved)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .filter((lesson) => lesson.testId === testId && !lesson.resolved)
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
       .slice(0, 3); // Return max 3 most recent
   }
 
@@ -32,8 +35,11 @@ export class LessonStore {
    */
   public getConsecutiveFailureCount(testId: string): number {
     const lessons = this.getAllLessons()
-      .filter(lesson => lesson.testId === testId && !lesson.resolved)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      .filter((lesson) => lesson.testId === testId && !lesson.resolved)
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
 
     if (lessons.length === 0) return 0;
     return lessons[0].consecutiveFailures;
@@ -76,10 +82,10 @@ export class LessonStore {
     }
 
     try {
-      const data = fs.readFileSync(this.lessonsFile, 'utf-8');
+      const data = fs.readFileSync(this.lessonsFile, "utf-8");
       return JSON.parse(data) as FailureLesson[];
     } catch (e) {
-      console.error('Failed to load lessons:', e);
+      console.error("Failed to load lessons:", e);
       return [];
     }
   }

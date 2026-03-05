@@ -2,46 +2,46 @@ name: QA Automation
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
-    - cron: '0 0 * * *' # Daily at midnight
+    - cron: "0 0 * * *" # Daily at midnight
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
-    - name: Install Dependencies
-      run: bun install
+      - name: Install Dependencies
+        run: bun install
 
-    - name: Build
-      run: bun run build
+      - name: Build
+        run: bun run build
 
-    - name: Run Automated QA
-      run: bun run test:auto
-      env:
-        GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
-        HEADLESS: true
+      - name: Run Automated QA
+        run: bun run test:auto
+        env:
+          GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
+          HEADLESS: true
 
-    - name: Upload Run History
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: qa-run-history
-        path: .qa-runs/
+      - name: Upload Run History
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-run-history
+          path: .qa-runs/
 
-    - name: Upload Reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: qa-reports
-        path: reports/
+      - name: Upload Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-reports
+          path: reports/

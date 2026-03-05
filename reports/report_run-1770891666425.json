@@ -10,9 +10,7 @@
       "duration": 17001,
       "bugs": [],
       "assertions": [],
-      "screenshots": [
-        "screenshot_1770891683425.png"
-      ],
+      "screenshots": ["screenshot_1770891683425.png"],
       "agentOutput": "",
       "validationOutput": ""
     }

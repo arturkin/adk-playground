@@ -10,9 +10,7 @@
       "duration": 111990,
       "bugs": [],
       "assertions": [],
-      "screenshots": [
-        "screenshot_1770917192313.png"
-      ],
+      "screenshots": ["screenshot_1770917192313.png"],
       "agentOutput": "The automated test 'Search Tour' was completed successfully. The tour was added to the cart, and checkout was possible, as described in the `task_completed` message from the navigator.\n\nHowever, there was an error when trying to record an assertion with ID 11. The validator reported: \"Assertion with ID 11 not found.\" This indicates an issue with the assertion recording system rather than the test execution itself.",
       "validationOutput": ""
     },

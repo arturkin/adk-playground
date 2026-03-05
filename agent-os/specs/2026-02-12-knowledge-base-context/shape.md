@@ -23,11 +23,14 @@ Implement a "Knowledge Base" system that allows defining domain-specific terms, 
 # [Domain/Area Name]
 
 ## Terms
+
 - **Term Name**: Definition or description of the term.
 
 ## Components
+
 - **Component Name**: How to identify it and common interactions.
 
 ## Procedures
+
 - **Procedure Name**: Sequence of high-level steps.
 ```

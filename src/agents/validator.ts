@@ -1,11 +1,11 @@
-import { LlmAgent } from '@google/adk';
-import { type AppConfig } from '../config/schema.js';
-import { takeScreenshotTool, recordAssertionTool } from '../tools/index.js';
-import { injectScreenshotCallback } from './callbacks.js';
+import { LlmAgent } from "@google/adk";
+import { type AppConfig } from "../config/schema.js";
+import { takeScreenshotTool, recordAssertionTool } from "../tools/index.js";
+import { injectScreenshotCallback } from "./callbacks.js";
 
 export function buildValidatorAgent(config: AppConfig) {
   return new LlmAgent({
-    name: 'validator',
+    name: "validator",
     model: config.models.validator,
     instruction: `You are a STRICT QA validation agent. Your ONLY job is to evaluate FORMAL ASSERTIONS and record each one using the record_assertion tool.
 
@@ -53,7 +53,7 @@ ANTI-RUBBER-STAMP RULES:
 
 Your final message MUST end with exactly one of: PASS, FAIL, or INCONCLUSIVE.`,
     tools: [takeScreenshotTool, recordAssertionTool],
-    outputKey: 'validation_result',
+    outputKey: "validation_result",
     beforeModelCallback: injectScreenshotCallback,
   });
 }

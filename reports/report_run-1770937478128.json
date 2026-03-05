@@ -27,15 +27,11 @@
           "url": "https://guidetoiceland.is/book-trips-holiday",
           "viewport": "desktop",
           "steps": [],
-          "screenshots": [
-            "screenshot_1770937688127"
-          ]
+          "screenshots": ["screenshot_1770937688127"]
         }
       ],
       "assertions": [],
-      "screenshots": [
-        "screenshot_1770937689010.png"
-      ],
+      "screenshots": ["screenshot_1770937689010.png"],
       "agentOutput": "A critical functional bug has been recorded with the ID \"BUG-1770937688127\". The booking widget on the product pages is not working, preventing users from adding tours to the cart and proceeding to checkout.",
       "validationOutput": "\nThe test \"Search Tour\" failed because the booking widget on the product page is consistently showing an error message, \"Whoops! We are terribly sorry. It seems our booking widget is not working at the moment.\" This prevented adding a tour to the cart and proceeding to checkout. I attempted two different tour pages, and both displayed the same error.The automated test \"Search Tour\" has failed. The booking widget on the product pages is consistently showing an error message, \"Whoops! We are terribly sorry. It seems our booking widget is not working at the moment.\" This prevents adding a tour to the cart and proceeding to checkout. I attempted two different tour pages, both displayed the same error."
     }

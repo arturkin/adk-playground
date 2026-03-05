@@ -23,5 +23,6 @@ Change `mimeType: 'image/png'` → `mimeType: 'image/jpeg'`
 ## Task 3: Verify
 
 Run `bun run test:auto` and confirm:
+
 - Navigator agent takes actions (clicks, types)
 - Tests reach pass/fail verdicts instead of inconclusive/error

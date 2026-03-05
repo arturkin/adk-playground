@@ -18,9 +18,7 @@
           "timestamp": "2026-02-12T17:29:45.995Z"
         }
       ],
-      "screenshots": [
-        "screenshot_1770917391115.png"
-      ],
+      "screenshots": ["screenshot_1770917391115.png"],
       "agentOutput": "All checks passed and the test completed successfully.",
       "validationOutput": ""
     },

@@ -26,11 +26,13 @@ ADK-QA is a next-generation QA automation tool built on the Google Agent Develop
 ## Setup
 
 1.  **Install Dependencies**:
+
     ```bash
     bun install
     ```
 
 2.  **Configure Environment**:
+
     ```bash
     cp .env.example .env
     # Edit .env and add your GOOGLE_GENAI_API_KEY
@@ -44,13 +46,17 @@ ADK-QA is a next-generation QA automation tool built on the Google Agent Develop
 ## Usage
 
 ### Manual QA Mode
+
 Run a one-off task with natural language:
+
 ```bash
 bun start manual "Go to http://guidetoiceland.is and check the title"
 ```
 
 ### Automated QA Mode
+
 Run test suites defined in `.md` files:
+
 ```bash
 # Run all tests in the default tests directory
 bun run test:auto
@@ -63,26 +69,37 @@ bun start auto --auto-fix
 ```
 
 ### Evaluation Mode
+
 Run evaluation benchmarks:
+
 ```bash
 bun run eval
 ```
 
 ## Writing Tests
+
 Tests are defined in Markdown files in the `tests/` directory:
 
 ```markdown
 # My Test Case
+
 ## Metadata
+
 - **url**: https://example.com
 - **viewport**: desktop
 - **priority**: high
+
 ## Steps
+
 1. Navigate to home
 2. Click 'Login'
+
 ## Expected Outcome
+
 Login modal is visible.
+
 ## Assertions
+
 - [ ] Modal is displayed
 ```
 
@@ -106,21 +123,27 @@ Configuration is managed via environment variables and validated with Zod. See `
 ADK-QA includes a 3-level self-correction pipeline that learns from failures:
 
 ### Level 1: Within-Run Retry
+
 When the navigator encounters errors during a test run, it applies intelligent retry strategies:
+
 - Element removed/changed → Take fresh screenshot to get updated element IDs
 - Click intercepted → Dismiss overlays/popups first, then retry
 - Element not in list → Scroll to reveal it
 - Same approach failed 3+ times → Try alternative strategies (keyboard navigation, different elements)
 
 ### Level 2: Cross-Run Learning
+
 Failure lessons are stored in `.qa-lessons/lessons.json` and automatically injected into future test runs:
+
 - Each failure is analyzed and categorized (navigation_error, element_not_found, timing_issue, popup_overlay, assertion_mismatch, test_definition_issue)
 - Actionable advice is generated for each failure type
 - Up to 3 most recent lessons are injected into navigator and validator prompts
 - When a test passes, previous lessons are marked as resolved
 
 ### Level 3: Test Definition Corrections
+
 After 3+ consecutive failures of the same type, the system suggests corrections:
+
 - Assertion mismatches → Suggests updating assertion expectations
 - Test definition issues → Suggests clarifying test steps
 - Navigation errors → Suggests verifying the target URL
@@ -128,6 +151,7 @@ After 3+ consecutive failures of the same type, the system suggests corrections:
 Corrections are logged to console and saved to `.qa-lessons/corrections.json`. Use `--auto-fix` to automatically apply corrections (with `.bak` backups).
 
 ### Viewing Self-Correction Data
+
 - **Active lessons**: Displayed at the end of each test run
 - **Correction suggestions**: Shown in console output and Markdown reports
 - **Model configuration**: Tracked in test results for comparing model performance

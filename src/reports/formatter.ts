@@ -1,10 +1,13 @@
-import { TestRunResult, RegressionReport } from '../types/report.js';
-import { testCorrectionManager } from '../memory/test-corrector.js';
+import { TestRunResult, RegressionReport } from "../types/report.js";
+import { testCorrectionManager } from "../memory/test-corrector.js";
 
 /**
  * Formats test run results and regression reports into Markdown.
  */
-export function formatMarkdownReport(run: TestRunResult, regression?: RegressionReport): string {
+export function formatMarkdownReport(
+  run: TestRunResult,
+  regression?: RegressionReport,
+): string {
   let md = `# QA Test Run Report\n\n`;
 
   md += `## Summary\n`;
@@ -17,16 +20,20 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
   md += `- **Total Tests**: ${run.summary.total}\n`;
   md += `- **Passed**: ${run.summary.passed}\n`;
   md += `- **Failed**: ${run.summary.failed}\n`;
-  if (run.summary.inconclusive > 0) md += `- **Inconclusive**: ${run.summary.inconclusive}\n`;
+  if (run.summary.inconclusive > 0)
+    md += `- **Inconclusive**: ${run.summary.inconclusive}\n`;
   if (run.summary.errors > 0) md += `- **Errors**: ${run.summary.errors}\n`;
   md += `- **Duration**: ${(run.summary.duration / 1000).toFixed(2)}s\n\n`;
 
-  if (regression && (regression.regressions.length > 0 || regression.improvements.length > 0)) {
+  if (
+    regression &&
+    (regression.regressions.length > 0 || regression.improvements.length > 0)
+  ) {
     md += `## Regressions & Improvements\n`;
 
     if (regression.regressions.length > 0) {
       md += `### ⚠️ Regressions\n`;
-      regression.regressions.forEach(r => {
+      regression.regressions.forEach((r) => {
         md += `- **${r.title}**: ${r.previousStatus} -> ${r.currentStatus}\n`;
         md += `  - Details: ${r.details}\n`;
       });
@@ -35,24 +42,30 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
 
     if (regression.improvements.length > 0) {
       md += `### ✨ Improvements\n`;
-      regression.improvements.forEach(i => {
+      regression.improvements.forEach((i) => {
         md += `- **${i.title}**: ${i.previousStatus} -> ${i.currentStatus}\n`;
       });
       md += `\n`;
     }
   }
 
-  const testsWithDetails = run.results.filter(r =>
-    r.status === 'failed' ||
-    r.status === 'error' ||
-    (r.assertions && r.assertions.length > 0) ||
-    (r.bugs && r.bugs.length > 0)
+  const testsWithDetails = run.results.filter(
+    (r) =>
+      r.status === "failed" ||
+      r.status === "error" ||
+      (r.assertions && r.assertions.length > 0) ||
+      (r.bugs && r.bugs.length > 0),
   );
 
   if (testsWithDetails.length > 0) {
     md += `## Test Details\n\n`;
-    testsWithDetails.forEach(test => {
-      const statusEmoji = test.status === 'passed' ? '✅' : (test.status === 'failed' || test.status === 'error' ? '❌' : '❓');
+    testsWithDetails.forEach((test) => {
+      const statusEmoji =
+        test.status === "passed"
+          ? "✅"
+          : test.status === "failed" || test.status === "error"
+            ? "❌"
+            : "❓";
       md += `### ${statusEmoji} ${test.title} (${test.status.toUpperCase()})\n`;
       md += `- **Test ID**: \`${test.testId}\`\n`;
       md += `- **Duration**: ${(test.duration / 1000).toFixed(2)}s\n`;
@@ -62,16 +75,16 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
         md += `#### Assertions\n`;
         md += `| Status | Description | Evidence |\n`;
         md += `|--------|-------------|----------|\n`;
-        test.assertions.forEach(a => {
-          const passEmoji = a.passed ? '✅' : '❌';
-          md += `| ${passEmoji} | ${a.description} | ${a.evidence || '-'} |\n`;
+        test.assertions.forEach((a) => {
+          const passEmoji = a.passed ? "✅" : "❌";
+          md += `| ${passEmoji} | ${a.description} | ${a.evidence || "-"} |\n`;
         });
         md += `\n`;
       }
 
       if (test.bugs && test.bugs.length > 0) {
         md += `#### Detected Bugs\n`;
-        test.bugs.forEach(bug => {
+        test.bugs.forEach((bug) => {
           md += `##### ${bug.title} (${bug.severity.toUpperCase()})\n`;
           md += `- **Category**: ${bug.category}\n`;
           md += `- **Description**: ${bug.description}\n`;
@@ -79,7 +92,7 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
           md += `- **Actual**: ${bug.actual}\n`;
           md += `- **URL**: ${bug.url}\n`;
           if (bug.screenshots.length > 0) {
-            md += `- **Screenshots**: ${bug.screenshots.join(', ')}\n`;
+            md += `- **Screenshots**: ${bug.screenshots.join(", ")}\n`;
           }
           md += `\n`;
         });
@@ -95,14 +108,14 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
 
   // Add test definition corrections section if any exist
   const allCorrections = testCorrectionManager.getAllCorrections();
-  const pendingCorrections = allCorrections.filter(c => !c.applied);
+  const pendingCorrections = allCorrections.filter((c) => !c.applied);
 
   if (pendingCorrections.length > 0) {
     md += `## Test Definition Corrections\n\n`;
     md += `The following corrections are suggested based on repeated test failures:\n\n`;
 
-    pendingCorrections.forEach(c => {
-      const appliedBadge = c.applied ? '✅ Applied' : '⚠️ Pending';
+    pendingCorrections.forEach((c) => {
+      const appliedBadge = c.applied ? "✅ Applied" : "⚠️ Pending";
       md += `### ${appliedBadge} - ${c.correctionType}\n`;
       md += `- **Test**: \`${c.testId}\`\n`;
       md += `- **Description**: ${c.description}\n`;
@@ -114,8 +127,13 @@ export function formatMarkdownReport(run: TestRunResult, regression?: Regression
   md += `## All Results\n`;
   md += `| Test Title | Status | Duration | Bugs |\n`;
   md += `|------------|--------|----------|------|\n`;
-  run.results.forEach(r => {
-    const statusEmoji = r.status === 'passed' ? '✅' : (r.status === 'failed' || r.status === 'error' ? '❌' : '❓');
+  run.results.forEach((r) => {
+    const statusEmoji =
+      r.status === "passed"
+        ? "✅"
+        : r.status === "failed" || r.status === "error"
+          ? "❌"
+          : "❓";
     md += `| ${r.title} | ${statusEmoji} ${r.status} | ${(r.duration / 1000).toFixed(2)}s | ${r.bugs.length} |\n`;
   });
 

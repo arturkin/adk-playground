@@ -11,14 +11,20 @@ When running `bun run test:auto`, the summary shows `Passed: 0, Failed: 0` with 
 ### RC1: `validation_result` is empty or missing from session state
 
 In `src/tests/runner.ts:69`, the runner reads:
+
 ```typescript
-const validationResult = (sessionDetails?.state?.['validation_result'] as string) || '';
+const validationResult =
+  (sessionDetails?.state?.["validation_result"] as string) || "";
 ```
 
 Then classifies the result at line 83:
+
 ```typescript
-const status = validationResult.toUpperCase().includes('PASS') ? 'passed' :
-               validationResult.toUpperCase().includes('FAIL') ? 'failed' : 'inconclusive';
+const status = validationResult.toUpperCase().includes("PASS")
+  ? "passed"
+  : validationResult.toUpperCase().includes("FAIL")
+    ? "failed"
+    : "inconclusive";
 ```
 
 If `validation_result` is empty or doesn't contain "PASS"/"FAIL", the status is always `inconclusive`.
@@ -31,9 +37,12 @@ If `validation_result` is empty or doesn't contain "PASS"/"FAIL", the status is 
 ### RC2: Summary only counts `passed` and `failed`, ignoring `inconclusive` and `error`
 
 In `src/tests/runner.ts:127-128`:
+
 ```typescript
-const passed = results.filter(r => r.status === 'passed').length;
-const failed = results.filter(r => r.status === 'failed' || r.status === 'error').length;
+const passed = results.filter((r) => r.status === "passed").length;
+const failed = results.filter(
+  (r) => r.status === "failed" || r.status === "error",
+).length;
 ```
 
 Tests with `inconclusive` status are counted in `total` but not in `passed` or `failed`, making the summary misleading.
@@ -86,23 +95,25 @@ Add a fallback: if `validation_result` is empty, check `assertions` state (which
 
 ```typescript
 // After reading session state:
-const validationResult = (sessionDetails?.state?.['validation_result'] as string) || '';
-const assertionsJson = (sessionDetails?.state?.['assertions'] as string) || '[]';
+const validationResult =
+  (sessionDetails?.state?.["validation_result"] as string) || "";
+const assertionsJson =
+  (sessionDetails?.state?.["assertions"] as string) || "[]";
 const assertions = JSON.parse(assertionsJson);
 
-let status: 'passed' | 'failed' | 'inconclusive' | 'error';
+let status: "passed" | "failed" | "inconclusive" | "error";
 
-if (validationResult.toUpperCase().includes('PASS')) {
-  status = 'passed';
-} else if (validationResult.toUpperCase().includes('FAIL')) {
-  status = 'failed';
+if (validationResult.toUpperCase().includes("PASS")) {
+  status = "passed";
+} else if (validationResult.toUpperCase().includes("FAIL")) {
+  status = "failed";
 } else if (assertions.length > 0) {
   // Fallback: use recorded assertions
   const allPassed = assertions.every((a: any) => a.passed === true);
   const anyFailed = assertions.some((a: any) => a.passed === false);
-  status = anyFailed ? 'failed' : allPassed ? 'passed' : 'inconclusive';
+  status = anyFailed ? "failed" : allPassed ? "passed" : "inconclusive";
 } else {
-  status = 'inconclusive';
+  status = "inconclusive";
 }
 ```
 
@@ -113,8 +124,8 @@ if (validationResult.toUpperCase().includes('PASS')) {
 Add inconclusive/error counts to the summary output, and treat `inconclusive` as a warning:
 
 ```typescript
-const inconclusive = results.filter(r => r.status === 'inconclusive').length;
-const errors = results.filter(r => r.status === 'error').length;
+const inconclusive = results.filter((r) => r.status === "inconclusive").length;
+const errors = results.filter((r) => r.status === "error").length;
 ```
 
 **File**: `src/index.ts` — Update the summary log to show these counts.
@@ -152,6 +163,7 @@ bun run test:auto
 ```
 
 Expected:
+
 - Navigator follows all steps (navigate, click tabs, click search)
 - Validator produces PASS/FAIL determination
 - Summary shows accurate passed/failed/inconclusive counts

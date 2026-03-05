@@ -7,43 +7,48 @@ This repository follows the **Agent OS** approach, utilizing structured developm
 High-level context and development history are maintained in the `agent-os/` directory:
 
 - **`agent-os/product/`**: The "Source of Truth" for the product vision.
-    - `mission.md`: Core purpose and values.
-    - `tech-stack.md`: Approved technologies and architectures.
-    - `roadmap.md`: Planned phases and features.
+  - `mission.md`: Core purpose and values.
+  - `tech-stack.md`: Approved technologies and architectures.
+  - `roadmap.md`: Planned phases and features.
 - **`agent-os/standards/`**: Architectural and coding guidelines.
-    - `index.yml`: Entry point for standards.
+  - `index.yml`: Entry point for standards.
 - **`agent-os/specs/`**: Feature-specific development artifacts. Each feature/refactor has its own date-prefixed folder (e.g., `2026-02-12-mvp-refactoring/`) containing:
-    - `shape.md`: High-level scope, architectural decisions, and constraints.
-    - `plan.md`: A detailed, task-by-task execution plan with verification steps.
-    - `references.md`: Pointers to relevant source code, documentation, or external assets.
+  - `shape.md`: High-level scope, architectural decisions, and constraints.
+  - `plan.md`: A detailed, task-by-task execution plan with verification steps.
+  - `references.md`: Pointers to relevant source code, documentation, or external assets.
 
 ## Spec-Driven Development (SDD) Workflow
 
 To maintain high quality and traceability, every significant change follows this automated workflow:
 
 ### 1. Exploration & Context Gathering
+
 - Read `agent-os/product/` to understand the goal.
 - Read `agent-os/standards/` to ensure compliance.
 - Search `agent-os/specs/` for historical context or conflicting plans.
 
 ### 2. Shaping (The "What" and "Why")
+
 - Create a new spec directory: `agent-os/specs/YYYY-MM-DD-short-description/`.
 - Create `shape.md` to define the scope and key technical decisions.
 
 ### 3. Planning (The "How")
+
 - Create `plan.md` with a numbered list of tasks.
 - Each task MUST have a clear goal, specific files to modify/create, and a verification method.
 - Create `references.md` with links to all files that will be touched.
 
 ### 4. Incremental Execution
+
 - Implement tasks one by one.
 - Update `plan.md` after each step:
-    - Mark completed tasks with `✓`.
-    - Mark in-progress tasks with `*`.
-    - Mark failed tasks with `!`.
+  - Mark completed tasks with `✓`.
+  - Mark in-progress tasks with `*`.
+  - Mark failed tasks with `!`.
 - **Never skip verification.**
 
 ### 5. Final Verification
+
 - Run the full verification suite defined at the end of `plan.md`.
 - Ensure all tests pass and the build is clean.
 

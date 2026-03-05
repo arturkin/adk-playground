@@ -1,13 +1,13 @@
 export interface EvalCase {
   testFilePath: string;
-  expectedStatus: 'passed' | 'failed';
+  expectedStatus: "passed" | "failed";
 }
 
 export interface EvalResult {
   testId: string;
   title: string;
-  expectedStatus: 'passed' | 'failed';
-  actualStatus: 'passed' | 'failed' | 'inconclusive' | 'error';
+  expectedStatus: "passed" | "failed";
+  actualStatus: "passed" | "failed" | "inconclusive" | "error";
   isCorrect: boolean;
 }
 

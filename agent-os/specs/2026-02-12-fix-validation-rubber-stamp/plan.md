@@ -5,6 +5,7 @@
 The QA automation tool's validation system is broken: **tests always pass regardless of actual outcomes**. The validator agent rubber-stamps PASS on everything, including tests where bugs were found (e.g., Search Tour found a non-interactive date picker but still passed). This undermines the core value proposition of reliable, AI-powered QA verdicts.
 
 **Root causes:**
+
 1. Validator lacks the assertion list -- `testCase.assertions` is never passed to session state
 2. Validator instruction is too vague -- no hard rules for PASS vs FAIL
 3. Validator can't see the page -- missing `beforeModelCallback: injectScreenshotCallback`
@@ -17,6 +18,7 @@ The QA automation tool's validation system is broken: **tests always pass regard
 ## Task 1: Save Spec Documentation
 
 Create `agent-os/specs/2026-02-12-fix-validation-rubber-stamp/` with:
+
 - **plan.md** -- This plan
 - **shape.md** -- Shaping notes
 - **references.md** -- Code references
@@ -55,14 +57,14 @@ This makes the assertion list available to the validator as `{test_assertions}` 
 Replace the entire instruction with strict, objective validation rules:
 
 ```typescript
-import { LlmAgent } from '@google/adk';
-import { type AppConfig } from '../config/schema.js';
-import { takeScreenshotTool, recordAssertionTool } from '../tools/index.js';
-import { injectScreenshotCallback } from './callbacks.js';
+import { LlmAgent } from "@google/adk";
+import { type AppConfig } from "../config/schema.js";
+import { takeScreenshotTool, recordAssertionTool } from "../tools/index.js";
+import { injectScreenshotCallback } from "./callbacks.js";
 
 export function buildValidatorAgent(config: AppConfig) {
   return new LlmAgent({
-    name: 'validator',
+    name: "validator",
     model: config.models.validator,
     instruction: `You are a STRICT QA validation agent. Your job is to determine whether a test PASSED or FAILED based on objective evidence from the current page state.
 
@@ -95,13 +97,14 @@ ANTI-RUBBER-STAMP RULES:
 
 Your final message MUST end with exactly one of these words on its own line: PASS, FAIL, or INCONCLUSIVE.`,
     tools: [takeScreenshotTool, recordAssertionTool],
-    outputKey: 'validation_result',
+    outputKey: "validation_result",
     beforeModelCallback: injectScreenshotCallback,
   });
 }
 ```
 
 Key changes:
+
 - Add `beforeModelCallback: injectScreenshotCallback` so the validator can SEE the page
 - Inject `{test_assertions}` template variable
 - Explicit anti-rubber-stamp rules
@@ -118,32 +121,35 @@ Replace status determination with multi-signal logic:
 ```typescript
 // Signal 1: validation_result text
 const validationVerdict = validationResult.toUpperCase();
-const validatorSaysPass = validationVerdict.includes('PASS') && !validationVerdict.includes('FAIL');
-const validatorSaysFail = validationVerdict.includes('FAIL');
+const validatorSaysPass =
+  validationVerdict.includes("PASS") && !validationVerdict.includes("FAIL");
+const validatorSaysFail = validationVerdict.includes("FAIL");
 
 // Signal 2: recorded assertions
 const hasAssertions = assertions.length > 0;
-const allAssertionsPassed = hasAssertions && assertions.every((a: any) => a.passed === true);
-const anyAssertionFailed = hasAssertions && assertions.some((a: any) => a.passed === false);
+const allAssertionsPassed =
+  hasAssertions && assertions.every((a: any) => a.passed === true);
+const anyAssertionFailed =
+  hasAssertions && assertions.some((a: any) => a.passed === false);
 
 // Signal 3: bugs found (structural safeguard)
 const hasSeriousBugs = bugs.some((b: BugReport) =>
-  ['critical', 'high', 'medium'].includes(b.severity)
+  ["critical", "high", "medium"].includes(b.severity),
 );
 
 // Decision logic with structural safeguards
 if (validatorSaysFail || anyAssertionFailed) {
-  status = 'failed';
+  status = "failed";
 } else if (hasSeriousBugs) {
-  status = 'failed';
+  status = "failed";
 } else if (validatorSaysPass && (!hasAssertions || allAssertionsPassed)) {
-  status = 'passed';
+  status = "passed";
 } else if (hasAssertions && allAssertionsPassed) {
-  status = 'passed';
+  status = "passed";
 } else if (!validationResult && !hasAssertions) {
-  status = 'inconclusive';
+  status = "inconclusive";
 } else {
-  status = 'inconclusive';
+  status = "inconclusive";
 }
 ```
 
@@ -162,13 +168,13 @@ export interface AssertionResult {
 export interface TestCaseResult {
   testId: string;
   title: string;
-  status: 'passed' | 'failed' | 'inconclusive' | 'error';
+  status: "passed" | "failed" | "inconclusive" | "error";
   duration: number;
   bugs: BugReport[];
-  assertions: AssertionResult[];   // NEW
+  assertions: AssertionResult[]; // NEW
   screenshots: string[];
   agentOutput: string;
-  validationOutput?: string;       // NEW
+  validationOutput?: string; // NEW
   error?: string;
 }
 ```
@@ -183,19 +189,19 @@ Add explicit capture of `validation_result` from validator events:
 
 ```typescript
 // Phase 2: Validate outcomes -- capture validation_result explicitly
-let capturedValidationResult = '';
+let capturedValidationResult = "";
 for await (const event of this.validator.runAsync(ctx)) {
   if (event.actions?.stateDelta) {
     Object.assign(ctx.session.state, event.actions.stateDelta);
-    if (event.actions.stateDelta['validation_result']) {
-      capturedValidationResult = event.actions.stateDelta['validation_result'];
+    if (event.actions.stateDelta["validation_result"]) {
+      capturedValidationResult = event.actions.stateDelta["validation_result"];
     }
   }
   yield event;
 }
 // Safety net
-if (capturedValidationResult && !ctx.session.state['validation_result']) {
-  ctx.session.state['validation_result'] = capturedValidationResult;
+if (capturedValidationResult && !ctx.session.state["validation_result"]) {
+  ctx.session.state["validation_result"] = capturedValidationResult;
 }
 ```
 
@@ -235,15 +241,19 @@ Add assertion results section to markdown reports showing each assertion's pass/
 Create `tests/negative/` with 4 test files designed to FAIL:
 
 ### `tests/negative/wrong-url-tour.md`
+
 Navigate to a 404 page (`/this-page-does-not-exist-404`), assert tour results exist.
 
 ### `tests/negative/impossible-element.md`
+
 Navigate to car rental page, assert "Buy Cryptocurrency" button exists.
 
 ### `tests/negative/wrong-content-assertion.md`
+
 Navigate to guidetoiceland.is, assert Amazon product listings visible.
 
 ### `tests/negative/missing-search-results.md`
+
 Search nonsense query "xyznonexistent999", assert exactly 500 results.
 
 ---
@@ -251,15 +261,18 @@ Search nonsense query "xyznonexistent999", assert exactly 500 results.
 ## Task 8: Build Eval Framework
 
 **New file: `src/evals/eval-types.ts`**
+
 - `EvalCase`: maps test file to expected status (passed/failed)
 - `EvalResult`: expected vs actual with correctness flag
 - `EvalRunResult`: accuracy, false positives, false negatives
 
 **New file: `src/evals/eval-dataset.ts`**
+
 - 2 positive tests (should PASS): search-tour.md, search-car-rental.md
 - 4 negative tests (should FAIL): the 4 negative tests
 
 **Modify: `src/evals/index.ts`**
+
 - Import eval dataset, run each case, compare actual vs expected
 - Track accuracy, false positives (expected FAIL got PASS), false negatives
 - Exit 0 on 100% accuracy, exit 1 otherwise

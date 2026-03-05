@@ -1,4 +1,4 @@
-import { FailureLesson } from '../types/lessons.js';
+import { FailureLesson } from "../types/lessons.js";
 
 /**
  * Formats failure lessons for injection into the navigator agent's prompt.
@@ -6,22 +6,24 @@ import { FailureLesson } from '../types/lessons.js';
  */
 export function formatLessonsForNavigator(lessons: FailureLesson[]): string {
   if (lessons.length === 0) {
-    return '';
+    return "";
   }
 
-  const formatted = lessons.map((lesson, index) => {
-    const parts: string[] = [];
-    parts.push(`### Failure ${index + 1} (Run: ${lesson.runId})`);
-    parts.push(`**Reason:** ${lesson.failureReason}`);
-    parts.push(`**Category:** ${lesson.failureCategory}`);
-    if (lesson.failedStep) {
-      parts.push(`**Failed Step:** ${lesson.failedStep}`);
-    }
-    parts.push(`**What Happened:** ${lesson.analysis}`);
-    parts.push(`**What to Try Differently:** ${lesson.advice}`);
-    parts.push(''); // blank line between lessons
-    return parts.join('\n');
-  }).join('\n');
+  const formatted = lessons
+    .map((lesson, index) => {
+      const parts: string[] = [];
+      parts.push(`### Failure ${index + 1} (Run: ${lesson.runId})`);
+      parts.push(`**Reason:** ${lesson.failureReason}`);
+      parts.push(`**Category:** ${lesson.failureCategory}`);
+      if (lesson.failedStep) {
+        parts.push(`**Failed Step:** ${lesson.failedStep}`);
+      }
+      parts.push(`**What Happened:** ${lesson.analysis}`);
+      parts.push(`**What to Try Differently:** ${lesson.advice}`);
+      parts.push(""); // blank line between lessons
+      return parts.join("\n");
+    })
+    .join("\n");
 
   return `
 PREVIOUS FAILURE INSIGHTS:
@@ -38,13 +40,13 @@ IMPORTANT: Apply the advice above to avoid repeating the same mistakes. If the s
  */
 export function formatLessonsForValidator(lessons: FailureLesson[]): string {
   if (lessons.length === 0) {
-    return '';
+    return "";
   }
 
   const categoryList = lessons
-    .map(l => l.failureCategory)
+    .map((l) => l.failureCategory)
     .filter((v, i, a) => a.indexOf(v) === i) // unique
-    .join(', ');
+    .join(", ");
 
   return `
 NOTE: This test has failed ${lessons[0].consecutiveFailures} consecutive time(s) with these issue categories: ${categoryList}.

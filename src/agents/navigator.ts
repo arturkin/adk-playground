@@ -1,11 +1,11 @@
-import { LlmAgent, LoopAgent } from '@google/adk';
-import { type AppConfig } from '../config/schema.js';
-import * as tools from '../tools/index.js';
-import { injectScreenshotCallback } from './callbacks.js';
+import { LlmAgent, LoopAgent } from "@google/adk";
+import { type AppConfig } from "../config/schema.js";
+import * as tools from "../tools/index.js";
+import { injectScreenshotCallback } from "./callbacks.js";
 
 export function buildNavigatorAgent(config: AppConfig) {
   const navigator = new LlmAgent({
-    name: 'navigator',
+    name: "navigator",
     model: config.models.navigator,
     instruction: `You are a QA automation expert. Your goal is to complete the assigned test steps sequentially.
 
@@ -56,20 +56,20 @@ export function buildNavigatorAgent(config: AppConfig) {
 
 {failure_lessons}`,
     tools: [
-      tools.navigateTool, 
-      tools.scrollTool, 
-      tools.clickElementTool, 
+      tools.navigateTool,
+      tools.scrollTool,
+      tools.clickElementTool,
       tools.hoverElementTool,
-      tools.typeElementTool, 
-      tools.pressKeyTool, 
-      tools.taskCompletedTool
+      tools.typeElementTool,
+      tools.pressKeyTool,
+      tools.taskCompletedTool,
     ],
-    outputKey: 'navigation_result',
+    outputKey: "navigation_result",
     beforeModelCallback: injectScreenshotCallback,
   });
 
   return new LoopAgent({
-    name: 'navigator_loop',
+    name: "navigator_loop",
     subAgents: [navigator],
     maxIterations: config.maxNavigationIterations,
   });

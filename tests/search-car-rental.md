@@ -1,12 +1,14 @@
 # Search Car Rental
 
 ## Metadata
+
 - **url**: https://guidetoiceland.is
 - **viewport**: desktop
 - **tags**: search, cars, booking
 - **priority**: high
 
 ## Steps
+
 1. Locate search widget and press Cars tab to switch to Car Rental tab.
 2. In search widget, locate date picker with label "Pick up" and press it.
 3. Locate date picker pop up
@@ -20,9 +22,11 @@
 11. Make sure car is added to cart and checkout form is displayed
 
 ## Expected Outcome
+
 Search results page loads with Car Rental Cards visible.
 
 ## Assertions
+
 - [ ] Search results page is displayed
 - [ ] At least one Car Rental Card is visible
 - [ ] Test opens up Car product page

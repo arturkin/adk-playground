@@ -1,12 +1,14 @@
 # Search Tour
 
 ## Metadata
+
 - **url**: https://guidetoiceland.is
 - **viewport**: desktop
 - **tags**: search, tours, booking
 - **priority**: medium
 
 ## Steps
+
 1. Locate search widget
 2. In search widget, locate date picker with label "Starting date" and press it.
 3. Locate date picker pop up
@@ -20,9 +22,11 @@
 11. Make sure tour is added to cart and checkout form is displayed
 
 ## Expected Outcome
+
 Search results page loads with Tour Cards visible.
 
 ## Assertions
+
 - [ ] Search results page is displayed
 - [ ] At least one Tour Card is visible
 - [ ] Test opens up Tour product page

@@ -7,7 +7,9 @@ export class BrowserManager {
   private page: Page | null = null;
   private viewport: ViewportConfig;
 
-  private constructor(viewport: ViewportConfig = { name: "desktop", width: 1280, height: 1000 }) {
+  private constructor(
+    viewport: ViewportConfig = { name: "desktop", width: 1280, height: 1000 },
+  ) {
     this.viewport = viewport;
   }
 
@@ -22,11 +24,16 @@ export class BrowserManager {
     return BrowserManager.instance;
   }
 
-  public async launch(headless: boolean = true): Promise<{ browser: Browser; page: Page }> {
+  public async launch(
+    headless: boolean = true,
+  ): Promise<{ browser: Browser; page: Page }> {
     if (this.browser && this.browser.isConnected()) {
       // Ensure page matches current viewport if it was changed
       if (this.page) {
-        await this.page.setViewport({ width: this.viewport.width, height: this.viewport.height });
+        await this.page.setViewport({
+          width: this.viewport.width,
+          height: this.viewport.height,
+        });
       }
       return { browser: this.browser, page: this.page! };
     }
@@ -44,11 +51,17 @@ export class BrowserManager {
         "--disable-setuid-sandbox",
         `--window-size=${this.viewport.width},${this.viewport.height}`,
       ],
-      defaultViewport: { width: this.viewport.width, height: this.viewport.height },
+      defaultViewport: {
+        width: this.viewport.width,
+        height: this.viewport.height,
+      },
     });
 
     this.page = await this.browser.newPage();
-    await this.page.setViewport({ width: this.viewport.width, height: this.viewport.height });
+    await this.page.setViewport({
+      width: this.viewport.width,
+      height: this.viewport.height,
+    });
     return { browser: this.browser, page: this.page };
   }
 
@@ -58,7 +71,9 @@ export class BrowserManager {
    */
   public async getActivePage(): Promise<Page> {
     if (!this.browser || !this.browser.isConnected()) {
-      throw new Error("Browser not initialized or disconnected. Call launch() first.");
+      throw new Error(
+        "Browser not initialized or disconnected. Call launch() first.",
+      );
     }
 
     const pages = await this.browser.pages();
@@ -70,7 +85,10 @@ export class BrowserManager {
 
     // No pages at all — create a new one
     this.page = await this.browser.newPage();
-    await this.page.setViewport({ width: this.viewport.width, height: this.viewport.height });
+    await this.page.setViewport({
+      width: this.viewport.width,
+      height: this.viewport.height,
+    });
     return this.page;
   }
 
@@ -101,4 +119,5 @@ export class BrowserManager {
   }
 }
 
-export const getBrowserManager = (viewport?: ViewportConfig) => BrowserManager.getInstance(viewport);
+export const getBrowserManager = (viewport?: ViewportConfig) =>
+  BrowserManager.getInstance(viewport);

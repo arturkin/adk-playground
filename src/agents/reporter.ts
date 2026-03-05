@@ -1,10 +1,10 @@
-import { LlmAgent } from '@google/adk';
-import { type AppConfig } from '../config/schema.js';
-import { recordBugTool } from '../tools/index.js';
+import { LlmAgent } from "@google/adk";
+import { type AppConfig } from "../config/schema.js";
+import { recordBugTool } from "../tools/index.js";
 
 export function buildReporterAgent(config: AppConfig) {
   return new LlmAgent({
-    name: 'reporter',
+    name: "reporter",
     model: config.models.reporter,
     instruction: `Generate a structured QA report from the following inputs:
     
@@ -26,6 +26,6 @@ Your task:
 
 Format the report for an engineering team.`,
     tools: [recordBugTool],
-    outputKey: 'final_report',
+    outputKey: "final_report",
   });
 }

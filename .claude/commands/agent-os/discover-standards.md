@@ -174,6 +174,7 @@ Standards will be injected into AI context windows. Every word costs tokens. Fol
 - **Bullet points over paragraphs** — Scannable beats readable
 
 **Good:**
+
 ```markdown
 # Error Responses
 
@@ -188,6 +189,7 @@ Use error codes: `AUTH_001`, `DB_001`, `VAL_001`
 ```
 
 **Bad:**
+
 ```markdown
 # Error Handling Guidelines
 
@@ -200,6 +202,7 @@ When an error occurs in our application, we have established a consistent patter
 Here's how to process a single standard through the complete workflow:
 
 **1. Present findings (Step 2):**
+
 ```
 I found these patterns in your API code:
 1. **Response Envelope** — All responses use { success, data, error }
@@ -211,6 +214,7 @@ Which would you like to document?
 User: "Both"
 
 **2. Ask why for first standard (Step 3):**
+
 ```
 For the Response Envelope pattern:
 - What problem does this solve? Why not return raw data?
@@ -220,6 +224,7 @@ For the Response Envelope pattern:
 User: "We use it so the frontend always knows where to find the data. All endpoints use it, no exceptions."
 
 **3. Draft first standard (Step 3 continued):**
+
 ```
 Here's the draft for api/response-envelope.md:
 
@@ -246,6 +251,7 @@ User: "Yes"
 [Create the file]
 
 **5. Ask why for second standard (back to Step 3):**
+
 ```
 For the Error Codes pattern:
 - What's the naming convention for codes?

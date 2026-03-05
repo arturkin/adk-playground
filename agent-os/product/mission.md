@@ -16,6 +16,7 @@ An AI-powered QA agent that uses injected visual indicators to detect and intera
 - **Automated QA mode**: Runs headless in CI (GitHub Actions), executing test suites defined in markdown files.
 
 Key differentiators:
+
 - **No selectors** — visual element detection eliminates the primary source of test flakiness
 - **3-level self-correction** — learns from failures within runs, across runs, and suggests test improvements
   - Level 1: Within-run retry strategies with alternative approaches

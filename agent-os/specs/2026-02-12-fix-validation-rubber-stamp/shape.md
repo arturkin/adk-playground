@@ -25,19 +25,25 @@ Fix the QA automation tool's validation system which rubber-stamps PASS on all t
 ## Root Cause Analysis
 
 ### RC1: Validator never receives the assertion list
+
 `src/tests/runner.ts:27-36` creates session state with `task_steps`, `url_hint`, `expected_criteria`, `current_viewport` but NOT `testCase.assertions`. The validator has no specific criteria to check against.
 
 ### RC2: Validator instruction is vague
+
 `src/agents/validator.ts:9-18` says "Check if the page state matches the expected outcome" with no hard rules for PASS vs FAIL. The LLM defaults to optimistic (PASS).
 
 ### RC3: Validator can't see the page
+
 `src/agents/validator.ts` is missing `beforeModelCallback: injectScreenshotCallback`. The navigator has it, but the validator validates against text description only, not actual page state.
 
 ### RC4: No structural safeguard against bugs + PASS
+
 `src/tests/runner.ts:86-98` can produce `status: 'passed'` even when bugs with medium/high severity were recorded by the reporter. Proven by Search Tour test run: found a "date picker not interactive" bug (medium severity) but status was "passed".
 
 ### RC5: `validation_result` propagation is fragile
+
 ADK's `outputKey` mechanism (`maybeSaveOutputToState`) only fires when `isFinalResponse(event)` is true (zero function calls in the event). If the validator's last message is a tool call, `validation_result` never gets saved. The orchestrator's `Object.assign(ctx.session.state, event.actions.stateDelta)` is a mitigation but doesn't guarantee capture.
 
 ### RC6: No way to measure validation accuracy
+
 No negative test scenarios exist. No eval framework compares expected outcomes. Can't tell if fixes actually work without known-FAIL test cases.

@@ -1,8 +1,8 @@
-import { BaseAgent, type InvocationContext, type Event } from '@google/adk';
-import { type AppConfig } from '../config/schema.js';
-import { buildNavigatorAgent } from './navigator.js';
-import { buildValidatorAgent } from './validator.js';
-import { buildReporterAgent } from './reporter.js';
+import { BaseAgent, type InvocationContext, type Event } from "@google/adk";
+import { type AppConfig } from "../config/schema.js";
+import { buildNavigatorAgent } from "./navigator.js";
+import { buildValidatorAgent } from "./validator.js";
+import { buildReporterAgent } from "./reporter.js";
 
 /**
  * Orchestrates the QA flow: Navigator -> Validator -> Reporter.
@@ -18,8 +18,8 @@ export class OrchestratorAgent extends BaseAgent {
     const validator = buildValidatorAgent(config);
     const reporter = buildReporterAgent(config);
     super({
-      name: 'orchestrator',
-      subAgents: [navigatorLoop, validator, reporter]
+      name: "orchestrator",
+      subAgents: [navigatorLoop, validator, reporter],
     });
     this.navigatorLoop = navigatorLoop;
     this.validator = validator;
@@ -36,13 +36,15 @@ export class OrchestratorAgent extends BaseAgent {
     }
 
     // Phase 2: Validate outcomes -- capture validation_result explicitly
-    let capturedValidationResult = '';
+    let capturedValidationResult = "";
     try {
       for await (const event of this.validator.runAsync(ctx)) {
         if (event.actions?.stateDelta) {
           Object.assign(ctx.session.state, event.actions.stateDelta);
-          if (event.actions.stateDelta['validation_result']) {
-            capturedValidationResult = event.actions.stateDelta['validation_result'] as string;
+          if (event.actions.stateDelta["validation_result"]) {
+            capturedValidationResult = event.actions.stateDelta[
+              "validation_result"
+            ] as string;
           }
         }
         yield event;
@@ -50,12 +52,15 @@ export class OrchestratorAgent extends BaseAgent {
     } catch (e) {
       // Validator may crash (e.g., LLM calls a tool not in its toolset).
       // Log and continue so the reporter phase still runs and we get a result.
-      console.warn(`  \x1b[33m[Validator error: ${(e as Error).message}] -- continuing to reporter\x1b[0m`);
-      ctx.session.state['validation_result'] = `VALIDATOR_ERROR: ${(e as Error).message}`;
+      console.warn(
+        `  \x1b[33m[Validator error: ${(e as Error).message}] -- continuing to reporter\x1b[0m`,
+      );
+      ctx.session.state["validation_result"] =
+        `VALIDATOR_ERROR: ${(e as Error).message}`;
     }
     // Safety net
-    if (capturedValidationResult && !ctx.session.state['validation_result']) {
-      ctx.session.state['validation_result'] = capturedValidationResult;
+    if (capturedValidationResult && !ctx.session.state["validation_result"]) {
+      ctx.session.state["validation_result"] = capturedValidationResult;
     }
 
     // Phase 3: Generate report
@@ -69,9 +74,12 @@ export class OrchestratorAgent extends BaseAgent {
     } catch (e) {
       // Reporter may crash (e.g., LLM calls a tool not in its toolset).
       // Log and continue so we still get partial results.
-      console.warn(`  \x1b[33m[Reporter error: ${(e as Error).message}] -- continuing\x1b[0m`);
-      if (!ctx.session.state['final_report']) {
-        ctx.session.state['final_report'] = `REPORTER_ERROR: ${(e as Error).message}`;
+      console.warn(
+        `  \x1b[33m[Reporter error: ${(e as Error).message}] -- continuing\x1b[0m`,
+      );
+      if (!ctx.session.state["final_report"]) {
+        ctx.session.state["final_report"] =
+          `REPORTER_ERROR: ${(e as Error).message}`;
       }
     }
   }

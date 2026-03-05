@@ -1,33 +1,35 @@
-import { ConfigSchema, type AppConfig } from './schema.js';
-import { getModelName } from './models.js';
+import { ConfigSchema, type AppConfig } from "./schema.js";
+import { getModelName } from "./models.js";
 
 function loadConfig(): AppConfig {
   const config = {
-    apiKey: process.env.GOOGLE_GENAI_API_KEY || '',
+    apiKey: process.env.GOOGLE_GENAI_API_KEY || "",
     models: {
-      navigator: getModelName(process.env.NAVIGATOR_MODEL || 'flash'),
-      validator: getModelName(process.env.VALIDATOR_MODEL || 'flash'),
-      reporter: getModelName(process.env.REPORTER_MODEL || 'flash'),
-      evaluator: getModelName(process.env.EVALUATOR_MODEL || 'flash'),
+      navigator: getModelName(process.env.NAVIGATOR_MODEL || "flash"),
+      validator: getModelName(process.env.VALIDATOR_MODEL || "flash"),
+      reporter: getModelName(process.env.REPORTER_MODEL || "flash"),
+      evaluator: getModelName(process.env.EVALUATOR_MODEL || "flash"),
     },
-    headless: process.env.HEADLESS !== 'false',
-    maxNavigationIterations: process.env.MAX_ITERATIONS ? parseInt(process.env.MAX_ITERATIONS) : undefined,
+    headless: process.env.HEADLESS !== "false",
+    maxNavigationIterations: process.env.MAX_ITERATIONS
+      ? parseInt(process.env.MAX_ITERATIONS)
+      : undefined,
     testDir: process.env.TEST_DIR,
     knowledgeBaseDir: process.env.KNOWLEDGE_BASE_DIR,
     reportDir: process.env.REPORT_DIR,
     lessonsDir: process.env.LESSONS_DIR,
-    debug: process.env.DEBUG === 'true',
+    debug: process.env.DEBUG === "true",
   };
 
   // Remove undefined values to let Zod defaults kick in
   const cleanConfig = Object.fromEntries(
-    Object.entries(config).filter(([_, v]) => v !== undefined)
+    Object.entries(config).filter(([_, v]) => v !== undefined),
   );
 
   const result = ConfigSchema.safeParse(cleanConfig);
 
   if (!result.success) {
-    console.error('❌ Invalid configuration:', result.error.format());
+    console.error("❌ Invalid configuration:", result.error.format());
     process.exit(1);
   }
 
@@ -35,5 +37,5 @@ function loadConfig(): AppConfig {
 }
 
 export const config = loadConfig();
-export * from './schema.js';
-export * from './models.js';
+export * from "./schema.js";
+export * from "./models.js";

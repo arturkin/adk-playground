@@ -27,15 +27,11 @@
           "url": "https://guidetoiceland.is",
           "viewport": "desktop",
           "steps": [],
-          "screenshots": [
-            "screenshot_1770937470697"
-          ]
+          "screenshots": ["screenshot_1770937470697"]
         }
       ],
       "assertions": [],
-      "screenshots": [
-        "screenshot_1770937471415.png"
-      ],
+      "screenshots": ["screenshot_1770937471415.png"],
       "agentOutput": "The bug \"Clicking tour cards on 'Tours & Packages' page leads to 404 error\" has been successfully recorded with ID BUG-1770937470697. This issue is critical and prevents the completion of the \"Search Tour\" automated test.",
       "validationOutput": "\nI've recorded assertions for all the failed steps. Now I need to try to get back to the home page to retry. I will click on \"Home\" (ID 3).I've recorded assertions for the failed steps. Now, I'll navigate back to the home page by clicking the \"Home\" button (ID 3) to restart the process and attempt to find a working tour."
     }

@@ -19,22 +19,26 @@
 ## Phase 2: Enhancement & Scale
 
 ### Observability & Analytics
+
 - **Results dashboard** — Visual dashboard displaying test results, failure lessons, model performance, and historical trends
 - **Lesson analytics** — Visualize failure patterns, resolution rates, and self-correction effectiveness
 - **Model performance metrics** — Compare test outcomes across different AI model configurations
 
 ### Intelligence & Automation
+
 - **Advanced failure analysis** — LLM-powered failure analysis to complement deterministic categorization
 - **Predictive flakiness detection** — Identify tests likely to fail based on historical patterns
 - **Auto-healing test suites** — Automatic test maintenance based on accumulated failure lessons
 
 ### Integrations & Extensibility
+
 - **Plugin/addon system** — Extensibility layer for custom test types and integrations
 - **Asana integration** — Connect test results and bug reports to Asana tasks and projects
 - **Auto-fix pipeline** — Integrate with coding tools (Claude Code, Gemini CLI) to automatically fix detected issues, then re-validate the result
 - **CI/CD plugins** — Native integrations for GitHub Actions, GitLab CI, Jenkins
 
 ### Collaboration Features
+
 - **Lesson sharing** — Export/import failure lessons across teams and projects
 - **Test library** — Shared repository of common test patterns and knowledge bases
 - **Collaborative debugging** — Team workspace for analyzing and resolving persistent test failures

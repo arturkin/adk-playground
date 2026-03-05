@@ -16,7 +16,7 @@ export interface TestCase {
   url: string;
   viewport: string;
   tags: string[];
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: "low" | "medium" | "high" | "critical";
   steps: TestStep[];
   expectedOutcome: string;
   assertions: TestAssertion[];

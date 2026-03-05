@@ -27,15 +27,11 @@
           "url": "https://guidetoiceland.is",
           "viewport": "desktop",
           "steps": [],
-          "screenshots": [
-            "screenshot_1770936734350"
-          ]
+          "screenshots": ["screenshot_1770936734350"]
         }
       ],
       "assertions": [],
-      "screenshots": [
-        "screenshot_1770936735126.png"
-      ],
+      "screenshots": ["screenshot_1770936735126.png"],
       "agentOutput": "I have recorded a bug regarding the failure of the `record_assertion` tool. The bug ID is BUG-1770936734350.",
       "validationOutput": ""
     },
@@ -82,9 +78,7 @@
           "timestamp": "2026-02-12T22:54:41.659Z"
         }
       ],
-      "screenshots": [
-        "screenshot_1770936885560.png"
-      ],
+      "screenshots": ["screenshot_1770936885560.png"],
       "agentOutput": "All assertions for the \"Search Car Rental\" automated test have been successfully recorded and passed. The test is complete.",
       "validationOutput": ""
     }
