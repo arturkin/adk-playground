@@ -20,6 +20,7 @@ export const ConfigSchema = z.object({
     navigator: z.number().default(8000),  // High: complex multi-step navigation & planning
     validator: z.number().default(2000),  // Medium: structured assertion evaluation
     reporter: z.number().default(0),      // Off: simple text formatting & summarization
+    evaluator: z.number().default(1000),  // Low: text reasoning over assertion evidence
   }).default({}),
   headless: z.boolean().default(true),
   viewports: z.array(ViewportSchema).default([

@@ -27,6 +27,12 @@ export interface AssertionResult {
   timestamp: string;
 }
 
+export interface EvaluationResult {
+  confidence: number;
+  override: string | null;
+  reason: string;
+}
+
 export interface TestCaseResult {
   testId: string;
   title: string;
@@ -38,6 +44,7 @@ export interface TestCaseResult {
   screenshots: string[];
   agentOutput: string;
   validationOutput?: string;
+  evaluationResult?: EvaluationResult;
   error?: string;
 }
 

@@ -49,13 +49,7 @@ export function formatMarkdownReport(
     }
   }
 
-  const testsWithDetails = run.results.filter(
-    (r) =>
-      r.status === "failed" ||
-      r.status === "error" ||
-      (r.assertions && r.assertions.length > 0) ||
-      (r.bugs && r.bugs.length > 0),
-  );
+  const testsWithDetails = run.results;
 
   if (testsWithDetails.length > 0) {
     md += `## Test Details\n\n`;
@@ -97,6 +91,15 @@ export function formatMarkdownReport(
           }
           md += `\n`;
         });
+      }
+
+      if (test.evaluationResult) {
+        const ev = test.evaluationResult;
+        if (ev.override === "FAIL") {
+          md += `#### Evaluator\n⚠️ **OVERRIDE FAIL** (confidence: ${ev.confidence}/100) — ${ev.reason}\n\n`;
+        } else {
+          md += `#### Evaluator\nconfidence: ${ev.confidence}/100 — ${ev.reason}\n\n`;
+        }
       }
 
       if (test.validationOutput) {

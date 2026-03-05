@@ -54,8 +54,57 @@ export const emptyResponseNudgeCallback = ({
 };
 
 /**
+ * Injects a reminder about unrecorded assertions into the model request.
+ * Fires before every validator model call so the model can't forget to
+ * call record_assertion for all assertions before writing a final verdict.
+ */
+export const validatorAssertionReminderCallback = async ({
+  context,
+  request,
+}: {
+  context: CallbackContext;
+  request: LlmRequest;
+}): Promise<LlmResponse | undefined> => {
+  const assertionCountStr = context.state.get("assertion_count") as
+    | string
+    | undefined;
+  const expectedCount = parseInt(assertionCountStr || "0", 10);
+
+  if (expectedCount > 0) {
+    const assertionsJson = context.state.get("assertions") as
+      | string
+      | undefined;
+    const recordedAssertions = assertionsJson ? JSON.parse(assertionsJson) : [];
+    const recorded = recordedAssertions.length;
+
+    if (recorded < expectedCount) {
+      const testAssertionsJson = context.state.get(
+        "_test_assertions_json",
+      ) as string | undefined;
+      const allAssertions = testAssertionsJson
+        ? JSON.parse(testAssertionsJson)
+        : [];
+      const recordedIds = new Set(recordedAssertions.map((a: any) => a.id));
+      const missing = allAssertions.filter((a: any) => !recordedIds.has(a.id));
+
+      const reminder =
+        missing.length > 0
+          ? `\n\n[MANDATORY REMINDER] You have recorded ${recorded}/${expectedCount} assertions. You MUST still call record_assertion for: ${missing.map((a: any) => `ID ${a.id} ("${a.description}")`).join(", ")}. Do NOT write a final verdict until ALL ${expectedCount} are recorded.`
+          : `\n\n[MANDATORY REMINDER] You must call record_assertion ${expectedCount} time(s) before writing a final verdict.`;
+
+      const lastMessage = request.contents[request.contents.length - 1];
+      if (!lastMessage.parts) lastMessage.parts = [];
+      lastMessage.parts.push({ text: reminder });
+    }
+  }
+
+  return undefined;
+};
+
+/**
  * Injects the latest screenshot and element list into the model request.
- * This allows the agent to "see" the current state of the browser.
+ * Used only by the navigator agent — other agents call take_screenshot themselves
+ * so they are forced into tool-calling mode before writing any free-form text.
  */
 export const injectScreenshotCallback = async ({
   context,

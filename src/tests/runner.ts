@@ -2,7 +2,7 @@ import { createRunner } from "../agents/index.js";
 import { getBrowserManager } from "../browser/index.js";
 import { type AppConfig } from "../config/schema.js";
 import { TestCase, TestSuite } from "../types/test.js";
-import { TestRunResult, TestCaseResult, BugReport } from "../types/report.js";
+import { TestRunResult, TestCaseResult, BugReport, EvaluationResult } from "../types/report.js";
 import {
   runStore,
   lessonStore,
@@ -128,6 +128,9 @@ export async function runTestCase(
     const assertionsJson =
       (sessionDetails?.state?.["assertions"] as string) || "[]";
     const assertions = JSON.parse(assertionsJson);
+    const evaluationJson =
+      (sessionDetails?.state?.["evaluation_result"] as string) || "";
+    const evaluation = evaluationJson ? JSON.parse(evaluationJson) : null;
 
     const bugs: BugReport[] = JSON.parse(bugsJson);
 
@@ -220,6 +223,19 @@ export async function runTestCase(
       statusReason = `Mixed signals — validator: "${validationResult.substring(0, 60) || "(empty)"}", assertions: ${assertions.length}/${expectedAssertionCount}`;
     }
 
+    // Signal 5: evaluator override (applies after initial status is set)
+    if (evaluation) {
+      if (evaluation.override === "FAIL" && status !== "failed") {
+        status = "failed";
+        statusReason = `Evaluator override (confidence: ${evaluation.confidence}/100): ${evaluation.reason}`;
+      } else if (evaluation.confidence < 50 && status === "passed") {
+        status = "inconclusive";
+        statusReason = `Low evaluator confidence (${evaluation.confidence}/100): ${evaluation.reason}`;
+      }
+      const evalColor = evaluation.override === "FAIL" ? "\x1b[31m" : evaluation.confidence >= 70 ? "\x1b[32m" : "\x1b[33m";
+      console.log(`  ${evalColor}[Evaluator] confidence=${evaluation.confidence}/100${evaluation.override ? ` → OVERRIDE ${evaluation.override}` : ""}\x1b[0m — ${evaluation.reason}`);
+    }
+
     const statusColor = status === "passed" ? "\x1b[32m" : status === "failed" ? "\x1b[31m" : "\x1b[33m";
     console.log(`  ${statusColor}[${status.toUpperCase()}]\x1b[0m ${statusReason}`);
     if (noAssertionsRecorded) {
@@ -237,6 +253,7 @@ export async function runTestCase(
       screenshots: screenshotFiles,
       agentOutput: finalReport,
       validationOutput: validationResult,
+      evaluationResult: evaluation as EvaluationResult | undefined,
     };
 
     // Record lessons based on test outcome
@@ -369,7 +386,13 @@ export async function runTestSuite(
   const runner = createRunner(config);
 
   for (const testCase of suite.testCases) {
-    const result = await runTestCase(testCase, config, runner, runId, options);
+    let result = await runTestCase(testCase, config, runner, runId, options);
+    if (result.status === "inconclusive") {
+      console.log(
+        `  \x1b[33m[Retry] Inconclusive result — retrying once\x1b[0m`,
+      );
+      result = await runTestCase(testCase, config, runner, runId, options);
+    }
     results.push(result);
   }
 

@@ -2,6 +2,7 @@ import { BaseAgent, type InvocationContext, type Event } from "@google/adk";
 import { type AppConfig } from "../config/schema.js";
 import { buildNavigatorAgent } from "./navigator.js";
 import { buildValidatorAgent } from "./validator.js";
+import { buildEvaluatorAgent } from "./evaluator.js";
 import { buildReporterAgent } from "./reporter.js";
 
 /**
@@ -11,18 +12,21 @@ import { buildReporterAgent } from "./reporter.js";
 export class OrchestratorAgent extends BaseAgent {
   private navigatorLoop;
   private validator;
+  private evaluator;
   private reporter;
 
   constructor(config: AppConfig) {
     const navigatorLoop = buildNavigatorAgent(config);
     const validator = buildValidatorAgent(config);
+    const evaluator = buildEvaluatorAgent(config);
     const reporter = buildReporterAgent(config);
     super({
       name: "orchestrator",
-      subAgents: [navigatorLoop, validator, reporter],
+      subAgents: [navigatorLoop, validator, evaluator, reporter],
     });
     this.navigatorLoop = navigatorLoop;
     this.validator = validator;
+    this.evaluator = evaluator;
     this.reporter = reporter;
   }
 
@@ -61,6 +65,26 @@ export class OrchestratorAgent extends BaseAgent {
     // Safety net
     if (capturedValidationResult && !ctx.session.state["validation_result"]) {
       ctx.session.state["validation_result"] = capturedValidationResult;
+    }
+
+    // Phase 2.5: Evaluate validator output for rubber-stamping
+    // Skip when no assertions were recorded — nothing meaningful to evaluate.
+    const recordedAssertions = JSON.parse(
+      (ctx.session.state["assertions"] as string) || "[]",
+    );
+    if (recordedAssertions.length > 0) {
+      try {
+        for await (const event of this.evaluator.runAsync(ctx)) {
+          if (event.actions?.stateDelta) {
+            Object.assign(ctx.session.state, event.actions.stateDelta);
+          }
+          yield event;
+        }
+      } catch (e) {
+        console.warn(
+          `  \x1b[33m[Evaluator error: ${(e as Error).message}] -- continuing to reporter\x1b[0m`,
+        );
+      }
     }
 
     // Phase 3: Generate report

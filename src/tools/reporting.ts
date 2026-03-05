@@ -1,6 +1,39 @@
 import { FunctionTool } from "@google/adk";
 import { z } from "zod";
 
+const evaluationParamsSchema = z.object({
+  confidence: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe("Confidence 0–100 that the validator's verdict is correct"),
+  override: z
+    .enum(["FAIL"])
+    .nullable()
+    .describe("Set to 'FAIL' to override a PASS verdict; null to accept"),
+  reason: z
+    .string()
+    .describe("One sentence explaining confidence score and override rationale"),
+});
+
+export const recordEvaluationTool = new FunctionTool({
+  name: "record_evaluation",
+  description:
+    "Records the evaluator's confidence score and optional verdict override.",
+  parameters: evaluationParamsSchema as any,
+  execute: async ({ confidence, override, reason }: any, toolContext) => {
+    if (!toolContext) throw new Error("ToolContext is required");
+    toolContext.state.set(
+      "evaluation_result",
+      JSON.stringify({ confidence, override, reason }),
+    );
+    return {
+      status: "success",
+      message: `Evaluation recorded: confidence=${confidence}/100, override=${override ?? "none"}`,
+    };
+  },
+});
+
 const bugParamsSchema = z.object({
   severity: z.enum(["critical", "high", "medium", "low", "info"]),
   category: z.enum([
