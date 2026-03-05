@@ -102,7 +102,8 @@ program
   .command("auto")
   .description("Run automated test suites")
   .option("--test-dir <dir>", "Directory containing test files", config.testDir)
-  .option("--test-file <file>", "Specific test file to run")
+  .option("--test-file <file>", "Specific test file to run (exact path)")
+  .option("--test <name>", "Run test(s) matching name (partial, case-insensitive)")
   .option(
     "--auto-fix",
     "Automatically apply test definition corrections",
@@ -124,6 +125,20 @@ program
         console.error(`Failed to parse test file: ${(e as Error).message}`);
         process.exit(1);
       }
+    } else if (options.test) {
+      const query = options.test.toLowerCase();
+      const all = await discoverTests(options.testDir);
+      const matched = all.testCases.filter((tc) =>
+        tc.id.toLowerCase().includes(query) ||
+        tc.title.toLowerCase().includes(query),
+      );
+      if (matched.length === 0) {
+        console.error(`No tests matching "${options.test}" found in ${options.testDir}`);
+        process.exit(1);
+      }
+      console.log(`Running ${matched.length} test(s) matching "${options.test}":`);
+      matched.forEach((tc) => console.log(`  - ${tc.title} (${tc.id})`));
+      suite = { name: `Filtered: ${options.test}`, testCases: matched };
     } else {
       console.log(`Discovering tests in: ${options.testDir}`);
       suite = await discoverTests(options.testDir);
