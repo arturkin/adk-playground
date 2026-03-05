@@ -1,6 +1,7 @@
 import { LlmAgent } from "@google/adk";
 import { type AppConfig } from "../config/schema.js";
 import { recordBugTool } from "../tools/index.js";
+import { emptyResponseNudgeCallback } from "./callbacks.js";
 
 export function buildReporterAgent(config: AppConfig) {
   return new LlmAgent({
@@ -27,5 +28,6 @@ Your task:
 Format the report for an engineering team.`,
     tools: [recordBugTool],
     outputKey: "final_report",
+    afterModelCallback: emptyResponseNudgeCallback,
   });
 }

@@ -1,7 +1,7 @@
 import { LlmAgent } from "@google/adk";
 import { type AppConfig } from "../config/schema.js";
 import { takeScreenshotTool, recordAssertionTool } from "../tools/index.js";
-import { injectScreenshotCallback } from "./callbacks.js";
+import { injectScreenshotCallback, emptyResponseNudgeCallback } from "./callbacks.js";
 
 export function buildValidatorAgent(config: AppConfig) {
   return new LlmAgent({
@@ -55,5 +55,6 @@ Your final message MUST end with exactly one of: PASS, FAIL, or INCONCLUSIVE.`,
     tools: [takeScreenshotTool, recordAssertionTool],
     outputKey: "validation_result",
     beforeModelCallback: injectScreenshotCallback,
+    afterModelCallback: emptyResponseNudgeCallback,
   });
 }

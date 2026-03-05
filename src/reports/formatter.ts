@@ -69,6 +69,7 @@ export function formatMarkdownReport(
       md += `### ${statusEmoji} ${test.title} (${test.status.toUpperCase()})\n`;
       md += `- **Test ID**: \`${test.testId}\`\n`;
       md += `- **Duration**: ${(test.duration / 1000).toFixed(2)}s\n`;
+      if (test.statusReason) md += `- **Reason**: ${test.statusReason}\n`;
       if (test.error) md += `- **Error**: \`${test.error}\`\n`;
 
       if (test.assertions && test.assertions.length > 0) {
@@ -125,8 +126,8 @@ export function formatMarkdownReport(
   }
 
   md += `## All Results\n`;
-  md += `| Test Title | Status | Duration | Bugs |\n`;
-  md += `|------------|--------|----------|------|\n`;
+  md += `| Test Title | Status | Reason | Duration | Bugs |\n`;
+  md += `|------------|--------|--------|----------|------|\n`;
   run.results.forEach((r) => {
     const statusEmoji =
       r.status === "passed"
@@ -134,7 +135,7 @@ export function formatMarkdownReport(
         : r.status === "failed" || r.status === "error"
           ? "❌"
           : "❓";
-    md += `| ${r.title} | ${statusEmoji} ${r.status} | ${(r.duration / 1000).toFixed(2)}s | ${r.bugs.length} |\n`;
+    md += `| ${r.title} | ${statusEmoji} ${r.status} | ${r.statusReason || "-"} | ${(r.duration / 1000).toFixed(2)}s | ${r.bugs.length} |\n`;
   });
 
   return md;

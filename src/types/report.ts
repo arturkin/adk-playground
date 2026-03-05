@@ -31,6 +31,7 @@ export interface TestCaseResult {
   testId: string;
   title: string;
   status: "passed" | "failed" | "inconclusive" | "error";
+  statusReason: string;
   duration: number;
   bugs: BugReport[];
   assertions: AssertionResult[];

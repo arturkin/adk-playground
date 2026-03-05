@@ -140,6 +140,8 @@ export async function runTestCase(
     }
 
     let status: "passed" | "failed" | "inconclusive" | "error";
+    let statusReason: string;
+
     // Signal 1: validation_result text
     const validationVerdict = validationResult.toUpperCase();
     const validatorSaysPass =
@@ -153,7 +155,6 @@ export async function runTestCase(
       assertions.every((a: any) => {
         const original = testCase.assertions[a.id - 1];
         if (!original) return false;
-        // Allow minor differences in whitespace or case, but otherwise must match
         return (
           a.passed === true &&
           a.description.trim().toLowerCase() ===
@@ -163,7 +164,7 @@ export async function runTestCase(
     const anyAssertionFailed =
       hasAssertions &&
       (assertions.some((a: any) => a.passed === false) ||
-        assertions.length < testCase.assertions.length); // Missing assertions count as failed
+        assertions.length < testCase.assertions.length);
 
     // Signal 3: bugs found (structural safeguard)
     const hasSeriousBugs = bugs.some((b: BugReport) =>
@@ -175,28 +176,56 @@ export async function runTestCase(
     const noAssertionsRecorded =
       expectedAssertionCount > 0 && assertions.length === 0;
 
-    // Decision logic with structural safeguards
+    // Decision logic
     if (validatorSaysFail || anyAssertionFailed) {
       status = "failed";
+      if (validatorSaysFail && anyAssertionFailed) {
+        const failedCount = assertions.filter((a: any) => !a.passed).length;
+        statusReason = `Validator said FAIL + ${failedCount} assertion(s) failed`;
+      } else if (validatorSaysFail) {
+        statusReason = "Validator explicitly said FAIL";
+      } else {
+        const failedCount = assertions.filter((a: any) => !a.passed).length;
+        const missing = testCase.assertions.length - assertions.length;
+        statusReason = missing > 0
+          ? `${failedCount} assertion(s) failed, ${missing} not recorded`
+          : `${failedCount} assertion(s) failed`;
+      }
     } else if (hasSeriousBugs) {
       status = "failed";
+      const serious = bugs.filter((b: BugReport) => ["critical", "high", "medium"].includes(b.severity));
+      statusReason = `${serious.length} serious bug(s): ${serious.map(b => b.severity).join(", ")}`;
     } else if (noAssertionsRecorded) {
-      // Test expects assertions but validator recorded none - cannot confirm pass
-      status = "failed";
+      // Validator produced no output at all — we don't know the outcome
+      status = "inconclusive";
+      statusReason = `Validator recorded 0/${expectedAssertionCount} expected assertions — validator may have failed silently (empty model response?)`;
     } else if (validatorSaysPass && (!hasAssertions || allAssertionsPassed)) {
       status = "passed";
+      statusReason = hasAssertions
+        ? `All ${assertions.length}/${expectedAssertionCount} assertions passed + validator confirmed PASS`
+        : "Validator confirmed PASS";
     } else if (hasAssertions && allAssertionsPassed) {
       status = "passed";
+      statusReason = `All ${assertions.length}/${expectedAssertionCount} assertions passed`;
     } else if (!validationResult && !hasAssertions) {
       status = "inconclusive";
+      statusReason = "No validation output and no assertions recorded";
     } else {
       status = "inconclusive";
+      statusReason = `Mixed signals — validator: "${validationResult.substring(0, 60) || "(empty)"}", assertions: ${assertions.length}/${expectedAssertionCount}`;
+    }
+
+    const statusColor = status === "passed" ? "\x1b[32m" : status === "failed" ? "\x1b[31m" : "\x1b[33m";
+    console.log(`  ${statusColor}[${status.toUpperCase()}]\x1b[0m ${statusReason}`);
+    if (noAssertionsRecorded) {
+      console.warn(`  \x1b[33m[Warning] No assertions recorded — check validator model output above\x1b[0m`);
     }
 
     const testResult: TestCaseResult = {
       testId: testCase.id,
       title: testCase.title,
       status,
+      statusReason,
       duration: Date.now() - startTime,
       bugs,
       assertions,
@@ -263,6 +292,7 @@ export async function runTestCase(
       testId: testCase.id,
       title: testCase.title,
       status: "error",
+      statusReason: `Unhandled exception: ${(error as Error).message}`,
       duration: Date.now() - startTime,
       bugs: [],
       assertions: [],
