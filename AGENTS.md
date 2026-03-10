@@ -52,6 +52,24 @@ To maintain high quality and traceability, every significant change follows this
 - Run the full verification suite defined at the end of `plan.md`.
 - Ensure all tests pass and the build is clean.
 
+## CLI Code Patterns
+
+When implementing CLI command handlers (Commander.js actions), keep actions thin:
+
+- **Extract selection logic**: Multi-branch input resolution (e.g., "which test suite to run?") belongs in a named function like `resolveTestSuite(options)`, not inline in `.action()`.
+- **Extract output logic**: Console-heavy summary/reporting blocks belong in named functions like `printRunSummary(...)`, not scattered through action handlers.
+- **Extract repeated guards**: API key checks and similar guards used in multiple commands belong in a helper like `requireApiKey()`.
+- **Keep actions as orchestration**: An `.action()` handler should read like a high-level script — call helpers, not contain implementation.
+
+This keeps `index.ts` readable top-to-bottom and makes each concern independently testable.
+
+## Best Practices
+
+- **No `any` types**: Never use `any` in TypeScript. Use specific types, generics, or interface augmentation (e.g., `Window & { myProp: string }`) instead.
+- **No `as` casts**: Avoid type assertions with `as`. Narrow types through guards, generics, or proper interface definitions.
+- **No underscore-prefixed names**: Do not use `_` prefixes for variables, parameters, or filenames (e.g., use `helpers.ts` not `_helpers.ts`, use a named parameter not `_unused`).
+- **VERY IMPORTANT — No code duplication**: Whenever you write or modify code, actively look for copy-pasted logic across functions, files, or modules and extract it into shared helpers. Duplicated code is a bug magnet — a fix in one copy is silently missed in others. Extract shared logic immediately rather than deferring it.
+
 ## Instructions for Automated Agents
 
 When you are initialized in this repository:

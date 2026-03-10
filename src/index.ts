@@ -3,11 +3,108 @@ import { config } from "./config/index.js";
 import { createRunner } from "./agents/index.js";
 import { getBrowserManager } from "./browser/index.js";
 import { discoverTests } from "./tests/discovery.js";
-import { runTestSuite, runTestCase } from "./tests/runner.js";
+import { runTestSuite } from "./tests/runner.js";
 import { parseTestCase } from "./tests/parser.js";
 import { getFunctionCalls, stringifyContent } from "@google/adk";
 import { runStore, detectRegressions, lessonStore } from "./memory/index.js";
 import { formatMarkdownReport, reportWriter } from "./reports/index.js";
+import type { TestRunResult, RegressionReport } from "./types/report.js";
+
+// --- Helpers ---
+
+function requireApiKey(): void {
+  if (!config.apiKey) {
+    console.error("Error: GOOGLE_GENAI_API_KEY is not set.");
+    process.exit(1);
+  }
+}
+
+async function resolveTestSuite(options: {
+  testFile?: string;
+  test?: string;
+  testDir: string;
+}) {
+  if (options.testFile) {
+    console.log(`Running single test file: ${options.testFile}`);
+    try {
+      const testCase = parseTestCase(options.testFile);
+      return { name: "Single Test", testCases: [testCase] };
+    } catch (e) {
+      console.error(`Failed to parse test file: ${(e as Error).message}`);
+      process.exit(1);
+    }
+  }
+
+  if (options.test) {
+    const query = options.test.toLowerCase();
+    const all = await discoverTests(options.testDir);
+    const matched = all.testCases.filter(
+      (tc) =>
+        tc.id.toLowerCase().includes(query) ||
+        tc.title.toLowerCase().includes(query),
+    );
+    if (matched.length === 0) {
+      console.error(
+        `No tests matching "${options.test}" found in ${options.testDir}`,
+      );
+      process.exit(1);
+    }
+    console.log(
+      `Running ${matched.length} test(s) matching "${options.test}":`,
+    );
+    matched.forEach((tc) => console.log(`  - ${tc.title} (${tc.id})`));
+    return { name: `Filtered: ${options.test}`, testCases: matched };
+  }
+
+  console.log(`Discovering tests in: ${options.testDir}`);
+  return discoverTests(options.testDir);
+}
+
+function printRunSummary(
+  runResult: TestRunResult,
+  regressionReport: RegressionReport,
+  activeLessonCount: number,
+): void {
+  const { summary } = runResult;
+
+  console.log("\n\x1b[1m--- TEST RUN SUMMARY ---\x1b[0m");
+  console.log(`Run ID: ${runResult.runId}`);
+  console.log(`Total: ${summary.total}`);
+  console.log(`Passed: \x1b[32m${summary.passed}\x1b[0m`);
+  console.log(`Failed: \x1b[31m${summary.failed}\x1b[0m`);
+  if (summary.inconclusive > 0)
+    console.log(`Inconclusive: \x1b[33m${summary.inconclusive}\x1b[0m`);
+  if (summary.errors > 0)
+    console.log(`Errors: \x1b[31m${summary.errors}\x1b[0m`);
+  console.log(`Duration: ${(summary.duration / 1000).toFixed(2)}s`);
+
+  if (regressionReport.regressions.length > 0) {
+    console.log("\n\x1b[31m⚠️  REGRESSIONS DETECTED:\x1b[0m");
+    regressionReport.regressions.forEach((r) => {
+      console.log(
+        `  - \x1b[1m${r.title}\x1b[0m: ${r.previousStatus} -> \x1b[31m${r.currentStatus}\x1b[0m`,
+      );
+      console.log(`    Details: ${r.details}`);
+    });
+  }
+
+  if (regressionReport.improvements.length > 0) {
+    console.log("\n\x1b[32m✨ IMPROVEMENTS DETECTED:\x1b[0m");
+    regressionReport.improvements.forEach((i) => {
+      console.log(
+        `  - \x1b[1m${i.title}\x1b[0m: ${i.previousStatus} -> \x1b[32m${i.currentStatus}\x1b[0m`,
+      );
+    });
+  }
+
+  if (activeLessonCount > 0) {
+    console.log(
+      `\n\x1b[36mℹ️  Active failure lessons: ${activeLessonCount} (will be injected into next run)\x1b[0m`,
+    );
+  }
+}
+
+// --- Commands ---
 
 const program = new Command();
 
@@ -22,10 +119,7 @@ program
   .argument("<task>", "Description of the QA task to perform")
   .option("--url <url>", "Initial URL to start from")
   .action(async (task, options) => {
-    if (!config.apiKey) {
-      console.error("Error: GOOGLE_GENAI_API_KEY is not set.");
-      process.exit(1);
-    }
+    requireApiKey();
 
     console.log(`Starting manual QA task: "${task}"`);
     if (options.url) console.log(`Starting URL: ${options.url}`);
@@ -90,7 +184,6 @@ program
     } catch (error) {
       console.error("Task failed:", error);
     } finally {
-      // Wait for a few seconds if not headless to see the last state
       if (!config.headless) {
         await new Promise((resolve) => setTimeout(resolve, 5000));
       }
@@ -103,46 +196,15 @@ program
   .description("Run automated test suites")
   .option("--test-dir <dir>", "Directory containing test files", config.testDir)
   .option("--test-file <file>", "Specific test file to run (exact path)")
-  .option("--test <name>", "Run test(s) matching name (partial, case-insensitive)")
   .option(
-    "--auto-fix",
-    "Automatically apply test definition corrections",
-    false,
+    "--test <name>",
+    "Run test(s) matching name (partial, case-insensitive)",
   )
+  .option("--auto-fix", "Automatically apply test definition corrections", false)
   .action(async (options) => {
-    if (!config.apiKey) {
-      console.error("Error: GOOGLE_GENAI_API_KEY is not set.");
-      process.exit(1);
-    }
+    requireApiKey();
 
-    let suite;
-    if (options.testFile) {
-      console.log(`Running single test file: ${options.testFile}`);
-      try {
-        const testCase = parseTestCase(options.testFile);
-        suite = { name: "Single Test", testCases: [testCase] };
-      } catch (e) {
-        console.error(`Failed to parse test file: ${(e as Error).message}`);
-        process.exit(1);
-      }
-    } else if (options.test) {
-      const query = options.test.toLowerCase();
-      const all = await discoverTests(options.testDir);
-      const matched = all.testCases.filter((tc) =>
-        tc.id.toLowerCase().includes(query) ||
-        tc.title.toLowerCase().includes(query),
-      );
-      if (matched.length === 0) {
-        console.error(`No tests matching "${options.test}" found in ${options.testDir}`);
-        process.exit(1);
-      }
-      console.log(`Running ${matched.length} test(s) matching "${options.test}":`);
-      matched.forEach((tc) => console.log(`  - ${tc.title} (${tc.id})`));
-      suite = { name: `Filtered: ${options.test}`, testCases: matched };
-    } else {
-      console.log(`Discovering tests in: ${options.testDir}`);
-      suite = await discoverTests(options.testDir);
-    }
+    const suite = await resolveTestSuite(options);
 
     if (suite.testCases.length === 0) {
       console.log("No tests found.");
@@ -164,62 +226,19 @@ program
 
       const regressionReport = detectRegressions(runResult, latestRun);
 
-      // Generate and save reports
       const markdownReport = formatMarkdownReport(runResult, regressionReport);
       const mdPath = reportWriter.writeMarkdownReport(
         markdownReport,
         runResult.runId,
       );
       const jsonPath = reportWriter.writeJsonReport(runResult);
-
-      console.log("\n\x1b[1m--- TEST RUN SUMMARY ---\x1b[0m");
-      console.log(`Run ID: ${runResult.runId}`);
-      console.log(`Total: ${runResult.summary.total}`);
-      console.log(`Passed: \x1b[32m${runResult.summary.passed}\x1b[0m`);
-      console.log(`Failed: \x1b[31m${runResult.summary.failed}\x1b[0m`);
-      if (runResult.summary.inconclusive > 0) {
-        console.log(
-          `Inconclusive: \x1b[33m${runResult.summary.inconclusive}\x1b[0m`,
-        );
-      }
-      if (runResult.summary.errors > 0) {
-        console.log(`Errors: \x1b[31m${runResult.summary.errors}\x1b[0m`);
-      }
-      console.log(
-        `Duration: ${(runResult.summary.duration / 1000).toFixed(2)}s`,
-      );
       console.log(`Reports: ${mdPath}, ${jsonPath}`);
 
-      if (regressionReport.regressions.length > 0) {
-        console.log("\n\x1b[31m⚠️  REGRESSIONS DETECTED:\x1b[0m");
-        regressionReport.regressions.forEach((r) => {
-          console.log(
-            `  - \x1b[1m${r.title}\x1b[0m: ${r.previousStatus} -> \x1b[31m${r.currentStatus}\x1b[0m`,
-          );
-          console.log(`    Details: ${r.details}`);
-        });
-      }
-
-      if (regressionReport.improvements.length > 0) {
-        console.log("\n\x1b[32m✨ IMPROVEMENTS DETECTED:\x1b[0m");
-        regressionReport.improvements.forEach((i) => {
-          console.log(
-            `  - \x1b[1m${i.title}\x1b[0m: ${i.previousStatus} -> \x1b[32m${i.currentStatus}\x1b[0m`,
-          );
-        });
-      }
-
-      // Show active lesson count
       const activeLessonCount = suite.testCases.reduce((count, testCase) => {
-        const lessons = lessonStore.getActiveLessons(testCase.id);
-        return count + lessons.length;
+        return count + lessonStore.getActiveLessons(testCase.id).length;
       }, 0);
 
-      if (activeLessonCount > 0) {
-        console.log(
-          `\n\x1b[36mℹ️  Active failure lessons: ${activeLessonCount} (will be injected into next run)\x1b[0m`,
-        );
-      }
+      printRunSummary(runResult, regressionReport, activeLessonCount);
 
       exitCode =
         runResult.summary.failed > 0 || regressionReport.regressions.length > 0

@@ -24,6 +24,11 @@ export function buildNavigatorAgent(config: AppConfig) {
     - Use "href" to understand where links go — AVOID clicking links that navigate away from the current task.
     - Use "placeholder" and "ariaLabel" to identify input fields and buttons.
 
+    TEXT ELEMENTS (blue boxes, T-prefixed IDs):
+    - You receive TWO screenshots per observation: the first shows blue bounding boxes with T-prefixed IDs (T1, T2, T3…) — these are read-only text labels (headings, labels, paragraphs). The second shows red bounding boxes with numeric IDs — these are the interactive elements you can click or type into.
+    - Use text elements to understand the context and layout around interactive elements (e.g., find the input near the "Select dates" label).
+    - NEVER click or type into text elements (T1, T2, etc.) — they are not interactive.
+
     MANDATORY REASONING — Before EVERY tool call, you MUST write the following:
     1. CURRENT STEP: Which step number you are on and quote its text
     2. PAGE STATE: What you see on the screenshot (one sentence)
@@ -49,7 +54,7 @@ export function buildNavigatorAgent(config: AppConfig) {
     - If an action did not produce the expected result, retry the SAME step — do NOT skip ahead.
     - DO NOT scroll unless you have looked through the ENTIRE element list and the element you need is NOT present. Elements are tagged even if they are off-screen, so check the element list FIRST before scrolling.
     - NEVER click <a> links that navigate to a different page unless the step explicitly says to navigate. Check the "href" field — if it points to a different page, DO NOT click it.
-    - Elements on the screenshot are tagged with red boxes and numerical IDs. Use these IDs to click or type into elements.
+    - Interactive elements are tagged with red boxes and numerical IDs in the second screenshot. Use these IDs to click or type into elements.
     - When ALL steps are completed successfully, call the 'task_completed' tool.
     - Be precise and avoid unnecessary steps.
     - NEVER ask the user for information — you have everything you need above.

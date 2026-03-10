@@ -1,7 +1,9 @@
 import { type ToolContext } from "@google/adk";
 import {
   tagElements,
+  tagTextNodes,
   getScreenshot,
+  clearMarkers,
   getBrowserManager,
 } from "../browser/index.js";
 
@@ -22,6 +24,12 @@ export async function captureBrowserState(
   const stepCount = Number(toolContext.state.get("step_count") || 0);
 
   try {
+    // Phase 1: Tag text nodes and capture screenshot, then clear them
+    const textNodes = await tagTextNodes(stepCount);
+    const textNodesScreenshot = await getScreenshot();
+    await clearMarkers();
+
+    // Phase 2: Tag interactive elements and capture screenshot
     const elements = await tagElements(stepCount);
     const screenshot = await getScreenshot();
 
@@ -44,7 +52,9 @@ export async function captureBrowserState(
     }
 
     toolContext.state.set("latest_screenshot", screenshot);
+    toolContext.state.set("latest_text_nodes_screenshot", textNodesScreenshot);
     toolContext.state.set("latest_elements", JSON.stringify(elements));
+    toolContext.state.set("latest_text_nodes", JSON.stringify(textNodes));
     toolContext.state.set("step_count", String(stepCount + 1));
 
     return elements.length;

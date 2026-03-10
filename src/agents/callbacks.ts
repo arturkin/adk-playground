@@ -114,7 +114,9 @@ export const injectScreenshotCallback = async ({
   request: LlmRequest;
 }): Promise<LlmResponse | undefined> => {
   const screenshot = context.state.get("latest_screenshot");
+  const textNodesScreenshot = context.state.get("latest_text_nodes_screenshot");
   const elements = context.state.get("latest_elements");
+  const textNodes = context.state.get("latest_text_nodes");
 
   if (screenshot) {
     // In ADK, we can append to the last message or add a new part
@@ -124,7 +126,23 @@ export const injectScreenshotCallback = async ({
       lastMessage.parts = [];
     }
 
-    // Add screenshot as an image part
+    // Add text node screenshot first (blue labels) if available
+    if (textNodesScreenshot) {
+      lastMessage.parts.push({
+        text: "\n\nPage screenshot with text elements highlighted (blue labels, T-prefixed IDs):",
+      });
+      lastMessage.parts.push({
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: textNodesScreenshot as string,
+        },
+      });
+    }
+
+    // Add interactive elements screenshot (red labels)
+    lastMessage.parts.push({
+      text: "\n\nPage screenshot with interactive elements highlighted (red labels, numeric IDs):",
+    });
     lastMessage.parts.push({
       inlineData: {
         mimeType: "image/jpeg",
@@ -136,6 +154,13 @@ export const injectScreenshotCallback = async ({
     if (elements) {
       lastMessage.parts.push({
         text: `\n\nInteractive elements on screen:\n${elements}`,
+      });
+    }
+
+    // Add text node metadata so the agent can read contextual labels and headings
+    if (textNodes) {
+      lastMessage.parts.push({
+        text: `\n\nText elements on screen (read-only, not clickable):\n${textNodes}`,
       });
     }
   }

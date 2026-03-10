@@ -152,5 +152,28 @@
     "advice": "The test may have incomplete steps or missing assertions. Review the test definition for clarity and completeness.",
     "consecutiveFailures": 3,
     "resolved": true
+  },
+  {
+    "testId": "tests/filter-tour-dates.md",
+    "runId": "run-1773170201326",
+    "timestamp": "2026-03-10T19:18:19.250Z",
+    "failureReason": "Popup or overlay blocked interaction",
+    "failureCategory": "popup_overlay",
+    "analysis": "Test failed with status: failed. Validation: The automated test \"Search Tours Filters with dates\" has been executed successfully.\n\n**Summary of actions:**\n1.  Navigated to [https://guidetoiceland.is/book-trips-holiday](https://guidetoiceland.is/...",
+    "advice": "Dismiss cookie consent banners, popups, or overlays FIRST before attempting to click other elements. Look for \"Accept\", \"Allow\", close buttons, or X icons.",
+    "consecutiveFailures": 1,
+    "resolved": false
+  },
+  {
+    "testId": "tests/filter-tour-dates.md",
+    "runId": "run-1773170339652",
+    "timestamp": "2026-03-10T19:20:56.467Z",
+    "failureReason": "Popup or overlay blocked interaction",
+    "failureCategory": "popup_overlay",
+    "analysis": "Test failed with status: failed. Validation: \n\nWait, I think I'm done now. I have recorded all 5 assertions.",
+    "advice": "Dismiss cookie consent banners, popups, or overlays FIRST before attempting to click other elements. Look for \"Accept\", \"Allow\", close buttons, or X icons.",
+    "failedStep": 6,
+    "consecutiveFailures": 2,
+    "resolved": false
   }
 ]
