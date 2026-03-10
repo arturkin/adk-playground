@@ -1,0 +1,55 @@
+{
+  "runId": "run-1770936933987",
+  "timestamp": "2026-02-12T22:59:27.727Z",
+  "gitCommit": "379e9a26680956b439aa491683ae5bee57adeccf",
+  "modelConfig": {
+    "navigator": "gemini-2.5-flash",
+    "validator": "gemini-2.5-flash",
+    "reporter": "gemini-2.5-flash",
+    "evaluator": "gemini-2.5-flash"
+  },
+  "results": [
+    {
+      "testId": "tests/search-tour.md",
+      "title": "Search Tour",
+      "status": "failed",
+      "duration": 233576,
+      "bugs": [
+        {
+          "severity": "high",
+          "category": "functional",
+          "title": "Tour card links lead to 404 - Page not found errors",
+          "description": "During the 'Search Tour' automated test, after performing a search and displaying tour listings on the /book-trips-holiday page, clicking on any tour card resulted in a '404 - Page not found' error. This issue prevents users from accessing tour product pages, adding tours to the cart, and proceeding to checkout.",
+          "expected": "Clicking on a tour card should navigate to the corresponding tour product page, displaying details about the tour.",
+          "actual": "Clicking on a tour card results in a '404 - Page not found' error.",
+          "id": "BUG-1770937166860",
+          "timestamp": "2026-02-12T22:59:26.860Z",
+          "url": "https://guidetoiceland.is/book-trips-holiday",
+          "viewport": "desktop",
+          "steps": [],
+          "screenshots": ["screenshot_1770937166860"]
+        }
+      ],
+      "assertions": [
+        {
+          "id": 1,
+          "description": "Search results page is displayed",
+          "passed": false,
+          "evidence": "Tour links are broken, leading to 404 - Page not found errors. Cannot access tour product page to add to cart or proceed to checkout.",
+          "timestamp": "2026-02-12T22:59:23.392Z"
+        }
+      ],
+      "screenshots": ["screenshot_1770937167561.png"],
+      "agentOutput": "A bug has been recorded with the ID \"BUG-1770937166860\".\n",
+      "validationOutput": ""
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "inconclusive": 0,
+    "errors": 0,
+    "duration": 233722
+  }
+}

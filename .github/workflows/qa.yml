@@ -1,0 +1,58 @@
+name: QA Automation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * *" # Daily at midnight
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Restore QA Memory
+        uses: actions/cache@v4
+        with:
+          path: |
+            .qa-lessons
+            .qa-runs/latest.json
+          key: qa-memory-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            qa-memory-${{ github.ref_name }}-
+            qa-memory-main-
+
+      - name: Run Automated QA
+        run: bun run test:auto
+        env:
+          GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
+          HEADLESS: true
+
+      - name: Upload Run History
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-run-history
+          path: .qa-runs/
+
+      - name: Upload Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-reports
+          path: reports/

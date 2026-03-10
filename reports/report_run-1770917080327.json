@@ -1,0 +1,37 @@
+{
+  "runId": "run-1770917080327",
+  "timestamp": "2026-02-12T17:28:09.274Z",
+  "gitCommit": "c2808230cc525f3173e95617a9688c324ce3f574",
+  "results": [
+    {
+      "testId": "tests/search-tour.md",
+      "title": "Search Tour",
+      "status": "failed",
+      "duration": 111990,
+      "bugs": [],
+      "assertions": [],
+      "screenshots": ["screenshot_1770917192313.png"],
+      "agentOutput": "The automated test 'Search Tour' was completed successfully. The tour was added to the cart, and checkout was possible, as described in the `task_completed` message from the navigator.\n\nHowever, there was an error when trying to record an assertion with ID 11. The validator reported: \"Assertion with ID 11 not found.\" This indicates an issue with the assertion recording system rather than the test execution itself.",
+      "validationOutput": ""
+    },
+    {
+      "testId": "tests/search-car-rental.md",
+      "title": "Search Car Rental",
+      "status": "error",
+      "duration": 86492,
+      "bugs": [],
+      "assertions": [],
+      "screenshots": [],
+      "agentOutput": "",
+      "error": "Function record_assertion is not found in the toolsDict."
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 0,
+    "failed": 1,
+    "inconclusive": 0,
+    "errors": 1,
+    "duration": 208924
+  }
+}

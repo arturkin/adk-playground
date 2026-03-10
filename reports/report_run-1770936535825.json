@@ -1,0 +1,81 @@
+{
+  "runId": "run-1770936535825",
+  "timestamp": "2026-02-12T22:52:13.500Z",
+  "gitCommit": "379e9a26680956b439aa491683ae5bee57adeccf",
+  "modelConfig": {
+    "navigator": "gemini-2.5-flash",
+    "validator": "gemini-2.5-flash",
+    "reporter": "gemini-2.5-flash",
+    "evaluator": "gemini-2.5-flash"
+  },
+  "results": [
+    {
+      "testId": "tests/search-tour.md",
+      "title": "Search Tour",
+      "status": "failed",
+      "duration": 108234,
+      "bugs": [
+        {
+          "severity": "high",
+          "category": "functional",
+          "title": "Booking widget non-functional on tour product page",
+          "description": "During the automated test \"Search Tour\", after navigating to a tour product page, the booking widget was not working. It displayed the error message: \"Whoops! We are terribly sorry. It seems our booking widget is not working at the moment. Please try again shortly. Click here to refresh the page and try again\". Clicking the refresh link did not resolve the issue, preventing the tour from being added to the cart and proceeding to checkout.",
+          "expected": "The booking widget should be functional and allow users to add the tour to the cart.",
+          "actual": "The booking widget displayed an error message and did not allow adding the tour to the cart.",
+          "id": "BUG-1770936642411",
+          "timestamp": "2026-02-12T22:50:42.411Z",
+          "url": "https://guidetoiceland.is",
+          "viewport": "desktop",
+          "steps": [],
+          "screenshots": ["screenshot_1770936642411"]
+        }
+      ],
+      "assertions": [],
+      "screenshots": ["screenshot_1770936644059.png"],
+      "agentOutput": "I have recorded a bug with the following details:\n- **Bug ID:** BUG-1770936642411\n- **Title:** Booking widget non-functional on tour product page\n- **Severity:** High\n- **Category:** Functional\n- **Description:** During the automated test \"Search Tour\", after navigating to a tour product page, the booking widget was not working. It displayed the error message: \"Whoops! We are terribly sorry. It seems our booking widget is not working at the moment. Please try again shortly. Click here to refresh the page and try again\". Clicking the refresh link did not resolve the issue, preventing the tour from being added to the cart and proceeding to checkout.\n- **Expected:** The booking widget should be functional and allow users to add the tour to the cart.\n- **Actual:** The booking widget displayed an error message and did not allow adding the tour to the cart.\n\nThis bug prevented the completion of steps 9, 10, and 11 of the \"Search Tour\" automated test.",
+      "validationOutput": "\nThe automated test \"Search Tour\" could not be fully completed. Steps 1-8 were successfully executed, including navigating to the target URL, locating the search widget, selecting a date range (March 1st to March 5th, 2026), performing a search, and clicking on a tour card to open its product page. However, steps 9-11 (add tour to cart, proceed to checkout, and verify checkout form) failed because the booking widget on the product page was not functional, displaying an error message 'Whoops! We are terribly sorry. It seems our booking widget is not working at the moment. Please try again shortly. Click here to refresh the page and try again'. I attempted to refresh the page as suggested, but the issue persisted."
+    },
+    {
+      "testId": "tests/search-car-rental.md",
+      "title": "Search Car Rental",
+      "status": "failed",
+      "duration": 89177,
+      "bugs": [
+        {
+          "severity": "critical",
+          "category": "functional",
+          "title": "Car rental search results not loading, displaying placeholders",
+          "description": "During the automated test \"Search Car Rental\" on https://guidetoiceland.is/iceland-car-rentals, after performing a search with selected pick-up and drop-off dates (March 1, 2026 to March 5, 2026), the car rental results page displayed placeholders instead of actual car cards. This prevented the test from proceeding to click on a car card, add to cart, and checkout.",
+          "expected": "After performing the car rental search, the page should display actual car rental cards with available vehicles and pricing information.",
+          "actual": "The car rental results page displayed placeholders where car cards should have been, indicating that the car rental data failed to load.",
+          "id": "BUG-1770936731028",
+          "timestamp": "2026-02-12T22:52:11.028Z",
+          "url": "https://guidetoiceland.is",
+          "viewport": "desktop",
+          "steps": [],
+          "screenshots": ["screenshot_1770936731028"]
+        }
+      ],
+      "assertions": [
+        {
+          "id": 1,
+          "description": "Search results page is displayed",
+          "passed": false,
+          "evidence": "Car rental results are not loading, showing placeholders instead of car cards after performing the search with selected dates. Unable to proceed with clicking on car cards, adding to cart, or proceeding to checkout.",
+          "timestamp": "2026-02-12T22:52:05.974Z"
+        }
+      ],
+      "screenshots": ["screenshot_1770936733381.png"],
+      "agentOutput": "The automated test for \"Search Car Rental\" on guidetoiceland.is encountered a critical functional bug. After selecting dates and performing the search, the car rental results page displayed placeholders instead of actual car cards, preventing further progression of the test.\n\nI have recorded a bug with the following details:\n- **Bug ID:** BUG-1770936731028\n- **Severity:** Critical\n- **Category:** Functional\n- **Title:** Car rental search results not loading, displaying placeholders\n- **Description:** During the automated test \"Search Car Rental\" on `https://guidetoiceland.is/iceland-car-rentals`, after performing a search with selected pick-up and drop-off dates (March 1, 2026 to March 5, 2026), the car rental results page displayed placeholders instead of actual car cards. This prevented the test from proceeding to click on a car card, add to cart, and checkout.\n- **Expected:** After performing the car rental search, the page should display actual car rental cards with available vehicles and pricing information.\n- **Actual:** The car rental results page displayed placeholders where car cards should have been, indicating that the car rental data failed to load.",
+      "validationOutput": "\nThe test cannot be completed due to the car rental results not loading. The page is displaying placeholders instead of actual car cards. Steps 1-6 were completed. I have taken a screenshot and recorded an assertion to document this failure.Test aborted. Car rental results are not loading, showing placeholders instead of car cards. Steps 1-6 completed successfully, but steps 7-11 cannot be performed. I have taken a screenshot and recorded an assertion for the failed test."
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 0,
+    "failed": 2,
+    "inconclusive": 0,
+    "errors": 0,
+    "duration": 197658
+  }
+}
