@@ -2,109 +2,12 @@ import { Page } from "puppeteer";
 import { robustEvaluate } from "./utils.js";
 import type { TextNodeMetadata } from "../types/browser.js";
 
-type MarkerConfig = {
-  borderColor: string;
-  background: string;
-  zIndex: string;
-  className: string;
-};
-
 // Extend the global Window interface to avoid `as` casts in evaluate callbacks
 declare global {
   interface Window {
     aiElementMap?: Record<number, Element>;
     _junie_open_patched?: boolean;
-    _aiHelpersInjected?: boolean;
-    _aiLabelPosition: (
-      rect: DOMRect,
-      renderIndex: number,
-    ) => { left: number; top: number; transform: string };
-    _aiAppendMarker: (
-      rect: DOMRect,
-      labelText: string,
-      renderIndex: number,
-      config: MarkerConfig,
-    ) => void;
   }
-}
-
-/**
- * Injects shared DOM marker helper functions into the page window.
- * Idempotent — safe to call before each tagging pass.
- */
-async function injectMarkerHelpers(page: Page) {
-  await robustEvaluate(page, () => {
-    if (window._aiHelpersInjected) return;
-
-    window._aiLabelPosition = (rect, renderIndex) => {
-      const posMode = renderIndex % 3;
-      const labelHeightApprox = 20;
-      let left = rect.left + window.scrollX;
-      let top = rect.top + window.scrollY;
-      let transform = "translateY(-100%)";
-
-      if (posMode === 0) {
-        if (rect.top < labelHeightApprox) transform = "translateY(0)";
-      } else if (posMode === 1) {
-        left = rect.right + window.scrollX;
-        transform = "translate(-100%, -100%)";
-        if (rect.top < labelHeightApprox) transform = "translate(-100%, 0)";
-      } else if (posMode === 2) {
-        top = rect.bottom + window.scrollY;
-        transform = "translateY(0)";
-        if (window.innerHeight - rect.bottom < labelHeightApprox)
-          transform = "translateY(-100%)";
-      }
-
-      return { left, top, transform };
-    };
-
-    window._aiAppendMarker = (rect, labelText, renderIndex, config) => {
-      const box = document.createElement("div");
-      box.className = config.className;
-      Object.assign(box.style, {
-        position: "absolute",
-        left: `${rect.left + window.scrollX}px`,
-        top: `${rect.top + window.scrollY}px`,
-        width: `${rect.width}px`,
-        height: `${rect.height}px`,
-        border: `2px solid ${config.borderColor}`,
-        backgroundColor: "transparent",
-        zIndex: config.zIndex,
-        pointerEvents: "none",
-        boxSizing: "border-box",
-      });
-      document.body.appendChild(box);
-
-      const { left, top, transform } = window._aiLabelPosition(
-        rect,
-        renderIndex,
-      );
-
-      const label = document.createElement("div");
-      label.className = config.className;
-      label.innerText = labelText;
-      Object.assign(label.style, {
-        position: "absolute",
-        left: `${left}px`,
-        top: `${top}px`,
-        transform,
-        zIndex: config.zIndex,
-        backgroundColor: config.background,
-        color: "#FFFFFF",
-        padding: "2px 4px",
-        fontSize: "12px",
-        fontWeight: "bold",
-        border: "1px solid white",
-        borderRadius: "2px",
-        pointerEvents: "none",
-        whiteSpace: "nowrap",
-      });
-      document.body.appendChild(label);
-    };
-
-    window._aiHelpersInjected = true;
-  });
 }
 
 /**
@@ -121,10 +24,12 @@ export async function clearMarkers(page: Page) {
 /**
  * Injects visual labels and bounding boxes into the page for AI to identify elements.
  * Preserves the core Set-of-Mark logic from the original implementation.
+ *
+ * NOTE: Label positioning and marker DOM creation are intentionally inlined
+ * (duplicated with tagTextNodes) because Puppeteer's page.evaluate serializes
+ * functions and cannot share closures or helpers across separate evaluate calls.
  */
 export async function tagElements(page: Page, renderIndex: number = 0) {
-  await injectMarkerHelpers(page);
-
   return await robustEvaluate(
     page,
     (renderIndex: number) => {
@@ -197,20 +102,80 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
         ariaLabel?: string;
       }[] = [];
 
-      const markerConfig: MarkerConfig = {
-        borderColor: "#FF0000",
-        background: "#FF0000",
-        zIndex: "2147483647",
-        className: "ai-marker",
-      };
-
       visibleElements.forEach((el, index) => {
         const rect = el.getBoundingClientRect();
         const id = index + 1;
 
+        // Store reference for clicking later
         window.aiElementMap![id] = el;
-        window._aiAppendMarker(rect, id.toString(), renderIndex, markerConfig);
 
+        // --- Create Bounding Box ---
+        const box = document.createElement("div");
+        box.className = "ai-marker";
+        Object.assign(box.style, {
+          position: "absolute",
+          left: `${rect.left + window.scrollX}px`,
+          top: `${rect.top + window.scrollY}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          border: "2px solid #FF0000",
+          backgroundColor: "transparent",
+          zIndex: "2147483647",
+          pointerEvents: "none",
+          boxSizing: "border-box",
+        });
+        document.body.appendChild(box);
+
+        // --- Create Label ---
+        const label = document.createElement("div");
+        label.className = "ai-marker";
+        label.innerText = id.toString();
+
+        // Determine position based on renderIndex (Retry Logic)
+        const posMode = renderIndex % 3;
+        const labelHeightApprox = 20;
+
+        let left = rect.left + window.scrollX;
+        let top = rect.top + window.scrollY;
+        let transform = "translateY(-100%)";
+
+        if (posMode === 0) {
+          if (rect.top < labelHeightApprox) {
+            transform = "translateY(0)";
+          }
+        } else if (posMode === 1) {
+          left = rect.right + window.scrollX;
+          transform = "translate(-100%, -100%)";
+          if (rect.top < labelHeightApprox) {
+            transform = "translate(-100%, 0)";
+          }
+        } else if (posMode === 2) {
+          top = rect.bottom + window.scrollY;
+          transform = "translateY(0)";
+          if (window.innerHeight - rect.bottom < labelHeightApprox) {
+            transform = "translateY(-100%)";
+          }
+        }
+
+        Object.assign(label.style, {
+          position: "absolute",
+          left: `${left}px`,
+          top: `${top}px`,
+          transform: transform,
+          zIndex: "2147483647",
+          backgroundColor: "#FF0000",
+          color: "#FFFFFF",
+          padding: "2px 4px",
+          fontSize: "12px",
+          fontWeight: "bold",
+          border: "1px solid white",
+          borderRadius: "2px",
+          pointerEvents: "none",
+          whiteSpace: "nowrap",
+        });
+        document.body.appendChild(label);
+
+        // Extract Metadata
         let text =
           (el as HTMLElement).innerText ||
           (el as HTMLInputElement).value ||
@@ -219,19 +184,22 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
         text = text.slice(0, 100).replace(/\s+/g, " ").trim();
 
         const meta: (typeof elementMetadata)[number] = {
-          id,
+          id: id,
           tagName: el.tagName.toLowerCase(),
-          text,
+          text: text,
         };
 
+        // Add role if present
         const role = el.getAttribute("role");
         if (role) meta.role = role;
 
+        // Add href for links
         if (el.tagName === "A") {
           const href = el.getAttribute("href");
           if (href) meta.href = href.slice(0, 120);
         }
 
+        // Add type and placeholder for inputs
         if (
           el.tagName === "INPUT" ||
           el.tagName === "TEXTAREA" ||
@@ -243,11 +211,13 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
           if (placeholder) meta.placeholder = placeholder.slice(0, 80);
         }
 
+        // Add truncated className for component recognition
         const className = el.className;
         if (typeof className === "string" && className.length > 0) {
           meta.className = className.slice(0, 80);
         }
 
+        // Add aria-label if different from text
         const ariaLabel = el.getAttribute("aria-label");
         if (ariaLabel && ariaLabel !== text) {
           meta.ariaLabel = ariaLabel.slice(0, 80);
@@ -265,14 +235,16 @@ export async function tagElements(page: Page, renderIndex: number = 0) {
 /**
  * Tags non-interactive text nodes with blue bounding boxes so the AI agent
  * can read labels, headings, and other contextual text near interactive elements.
- * Must be called BEFORE tagElements() or after clearMarkers() to avoid overlap.
+ * Called separately from tagElements() — each gets its own screenshot to avoid label overlap.
+ *
+ * NOTE: Label positioning and marker DOM creation are intentionally inlined
+ * (duplicated with tagElements) because Puppeteer's page.evaluate serializes
+ * functions and cannot share closures or helpers across separate evaluate calls.
  */
 export async function tagTextNodes(
   page: Page,
   renderIndex: number = 0,
 ): Promise<TextNodeMetadata[]> {
-  await injectMarkerHelpers(page);
-
   return await robustEvaluate(
     page,
     (renderIndex: number): TextNodeMetadata[] => {
@@ -305,34 +277,37 @@ export async function tagTextNodes(
 
       const candidates = Array.from(document.querySelectorAll(selectors));
 
-      // 3. Filter visible elements, deduplicating against already-tagged interactive elements
-      const aiMap = window.aiElementMap ?? {};
-      const interactiveElements = new Set(Object.values(aiMap));
-
-      const visible = candidates.filter((el) => {
-        const rect = el.getBoundingClientRect();
-        if (
-          rect.width <= 5 ||
-          rect.height <= 5 ||
-          window.getComputedStyle(el).visibility === "hidden" ||
-          window.getComputedStyle(el).display === "none"
-        ) {
-          return false;
-        }
-        if (interactiveElements.has(el)) return false;
-        for (const interactive of interactiveElements) {
-          if (interactive.contains(el)) return false;
-        }
+      // 3. Exclude text nodes inside interactive elements (already covered by tagElements)
+      const interactiveSelectors =
+        "a, button, input, select, textarea, " +
+        '[role="button"], [role="link"], [role="menuitem"], [role="tab"], ' +
+        '[role="option"], [role="checkbox"], [role="radio"], [onclick]';
+      const nonInteractive = candidates.filter((el) => {
+        // Skip elements inside interactive containers
+        if (el.closest(interactiveSelectors)) return false;
+        // Skip label[for] — these describe form controls already covered by tagElements
+        if (el.tagName === "LABEL" && el.hasAttribute("for")) return false;
         return true;
       });
 
-      // 4. Filter by minimum text length
-      const withText = visible.filter((el) => {
-        const text = (el as HTMLElement).innerText?.trim() ?? "";
-        return text.length >= 3;
+      // 4. Filter visible elements
+      const visible = nonInteractive.filter((el) => {
+        const rect = el.getBoundingClientRect();
+        return (
+          rect.width > 5 &&
+          rect.height > 5 &&
+          window.getComputedStyle(el).visibility !== "hidden" &&
+          window.getComputedStyle(el).display !== "none"
+        );
       });
 
-      // 5. Sort by priority: headings > labels > other
+      // 5. Filter by minimum text length
+      const withText = visible.filter((el) => {
+        const text = (el as HTMLElement).innerText?.trim() ?? "";
+        return text.length >= 2;
+      });
+
+      // 6. Sort by priority: headings > labels > other
       const headingTags = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
       withText.sort((a, b) => {
         const aTag = a.tagName.toLowerCase();
@@ -350,15 +325,8 @@ export async function tagTextNodes(
         return 0;
       });
 
-      // 6. Cap at 40 text nodes
-      const capped = withText.slice(0, 40);
-
-      const markerConfig: MarkerConfig = {
-        borderColor: "#2196F3",
-        background: "#2196F3",
-        zIndex: "2147483646",
-        className: "ai-text-marker",
-      };
+      // 7. Cap at 80 text nodes
+      const capped = withText.slice(0, 80);
 
       const textMetadata: TextNodeMetadata[] = [];
 
@@ -366,8 +334,66 @@ export async function tagTextNodes(
         const rect = el.getBoundingClientRect();
         const textId = `T${index + 1}`;
 
-        window._aiAppendMarker(rect, textId, renderIndex, markerConfig);
+        // --- Create Blue Bounding Box ---
+        const box = document.createElement("div");
+        box.className = "ai-text-marker";
+        Object.assign(box.style, {
+          position: "absolute",
+          left: `${rect.left + window.scrollX}px`,
+          top: `${rect.top + window.scrollY}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          border: "2px solid #2196F3",
+          backgroundColor: "transparent",
+          zIndex: "2147483646",
+          pointerEvents: "none",
+          boxSizing: "border-box",
+        });
+        document.body.appendChild(box);
 
+        // --- Create Blue Label ---
+        const labelEl = document.createElement("div");
+        labelEl.className = "ai-text-marker";
+        labelEl.innerText = textId;
+
+        const posMode = renderIndex % 3;
+        const labelHeightApprox = 20;
+        let left = rect.left + window.scrollX;
+        let top = rect.top + window.scrollY;
+        let transform = "translateY(-100%)";
+
+        if (posMode === 1) {
+          left = rect.right + window.scrollX;
+          transform = "translate(-100%, -100%)";
+          if (rect.top < labelHeightApprox) transform = "translate(-100%, 0)";
+        } else if (posMode === 2) {
+          top = rect.bottom + window.scrollY;
+          transform = "translateY(0)";
+          if (window.innerHeight - rect.bottom < labelHeightApprox)
+            transform = "translateY(-100%)";
+        } else {
+          if (rect.top < labelHeightApprox) transform = "translateY(0)";
+        }
+
+        Object.assign(labelEl.style, {
+          position: "absolute",
+          left: `${left}px`,
+          top: `${top}px`,
+          transform: transform,
+          zIndex: "2147483646",
+          backgroundColor: "#2196F3",
+          color: "#FFFFFF",
+          padding: "2px 4px",
+          fontSize: "12px",
+          fontWeight: "bold",
+          border: "1px solid white",
+          borderRadius: "2px",
+          pointerEvents: "none",
+          whiteSpace: "nowrap",
+        });
+        document.body.appendChild(labelEl);
+
+        // Collect metadata
         const rawText = (el as HTMLElement).innerText?.trim() ?? "";
         const meta: TextNodeMetadata = {
           id: textId,

@@ -19,17 +19,25 @@ export async function captureBrowserState(
   toolContext: ToolContext,
 ): Promise<number> {
   // Wait for UI stabilization (CSS transitions, framework render cycles)
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   const stepCount = Number(toolContext.state.get("step_count") || 0);
 
   try {
-    // Phase 1: Tag text nodes and capture screenshot, then clear them
-    const textNodes = await tagTextNodes(stepCount);
-    const textNodesScreenshot = await getScreenshot();
+    // Clear stale markers from previous capture cycle
     await clearMarkers();
 
-    // Phase 2: Tag interactive elements and capture screenshot
+    // Phase 1: Tag text nodes and capture screenshot
+    const textNodes = await tagTextNodes(stepCount);
+    // Delay to ensure browser paints the markers before screenshot
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const textNodesScreenshot = await getScreenshot();
+    console.log(
+      `    \x1b[34m[capture]\x1b[0m Text nodes tagged: ${textNodes.length}`,
+    );
+
+    // Phase 2: Clear text markers, tag interactive elements, capture screenshot
+    await clearMarkers();
     const elements = await tagElements(stepCount);
     const screenshot = await getScreenshot();
 

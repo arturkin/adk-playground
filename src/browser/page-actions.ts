@@ -130,7 +130,7 @@ export async function clickElement(page: Page, id: number) {
   // Wait up to 2s to see if the click triggered a navigation
   const didNavigate = await Promise.race([
     navPromise,
-    new Promise<false>((resolve) => setTimeout(() => resolve(false), 2000)),
+    new Promise<false>((resolve) => setTimeout(() => resolve(false), 1000)),
   ]);
 
   if (didNavigate) {
@@ -138,7 +138,7 @@ export async function clickElement(page: Page, id: number) {
       `    \x1b[35m[click_element #${id}]\x1b[0m Navigation detected, waiting for page render...`,
     );
     // Full navigation occurred - wait for the new page to render
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   // Log the current URL after the click

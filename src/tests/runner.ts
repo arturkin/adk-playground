@@ -366,7 +366,7 @@ export async function runTestCase(
   } finally {
     // Wait for a few seconds if not headless to see the last state
     if (!config.headless) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
     await browser.close();
   }

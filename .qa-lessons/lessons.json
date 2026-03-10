@@ -162,7 +162,7 @@
     "analysis": "Test failed with status: failed. Validation: The automated test \"Search Tours Filters with dates\" has been executed successfully.\n\n**Summary of actions:**\n1.  Navigated to [https://guidetoiceland.is/book-trips-holiday](https://guidetoiceland.is/...",
     "advice": "Dismiss cookie consent banners, popups, or overlays FIRST before attempting to click other elements. Look for \"Accept\", \"Allow\", close buttons, or X icons.",
     "consecutiveFailures": 1,
-    "resolved": false
+    "resolved": true
   },
   {
     "testId": "tests/filter-tour-dates.md",
@@ -174,6 +174,6 @@
     "advice": "Dismiss cookie consent banners, popups, or overlays FIRST before attempting to click other elements. Look for \"Accept\", \"Allow\", close buttons, or X icons.",
     "failedStep": 6,
     "consecutiveFailures": 2,
-    "resolved": false
+    "resolved": true
   }
 ]

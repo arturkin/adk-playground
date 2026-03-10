@@ -185,7 +185,7 @@ program
       console.error("Task failed:", error);
     } finally {
       if (!config.headless) {
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
       await browser.close();
     }
