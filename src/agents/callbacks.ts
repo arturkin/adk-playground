@@ -114,7 +114,6 @@ export const injectScreenshotCallback = async ({
   request: LlmRequest;
 }): Promise<LlmResponse | undefined> => {
   const screenshot = context.state.get("latest_screenshot");
-  const textNodesScreenshot = context.state.get("latest_text_nodes_screenshot");
   const elements = context.state.get("latest_elements");
   const textNodes = context.state.get("latest_text_nodes");
 
@@ -126,22 +125,9 @@ export const injectScreenshotCallback = async ({
       lastMessage.parts = [];
     }
 
-    // Add text node screenshot first (blue labels) if available
-    if (textNodesScreenshot) {
-      lastMessage.parts.push({
-        text: "\n\nPage screenshot with text elements highlighted (blue labels, T-prefixed IDs):",
-      });
-      lastMessage.parts.push({
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: textNodesScreenshot as string,
-        },
-      });
-    }
-
-    // Add interactive elements screenshot (red labels)
+    // Single combined screenshot with both red (interactive) and blue (text) markers
     lastMessage.parts.push({
-      text: "\n\nPage screenshot with interactive elements highlighted (red labels, numeric IDs):",
+      text: "\n\nPage screenshot with interactive elements (red labels, numeric IDs) and text elements (blue labels, T-prefixed IDs):",
     });
     lastMessage.parts.push({
       inlineData: {

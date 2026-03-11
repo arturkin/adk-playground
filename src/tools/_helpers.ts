@@ -24,22 +24,19 @@ export async function captureBrowserState(
   const stepCount = Number(toolContext.state.get("step_count") || 0);
 
   try {
-    // Clear stale markers from previous capture cycle
+    // Clear all stale markers from previous capture cycle
     await clearMarkers();
 
-    // Phase 1: Tag text nodes and capture screenshot
+    // Tag text nodes (blue, offset posMode) then interactive elements (red)
+    // in a single pass — they use different CSS classes so they coexist.
     const textNodes = await tagTextNodes(stepCount);
-    // Delay to ensure browser paints the markers before screenshot
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    const textNodesScreenshot = await getScreenshot();
-    console.log(
-      `    \x1b[34m[capture]\x1b[0m Text nodes tagged: ${textNodes.length}`,
-    );
-
-    // Phase 2: Clear text markers, tag interactive elements, capture screenshot
-    await clearMarkers();
     const elements = await tagElements(stepCount);
+
+    // Single screenshot with both blue + red markers visible
     const screenshot = await getScreenshot();
+    console.log(
+      `    \x1b[34m[capture]\x1b[0m Text: ${textNodes.length} | Elements: ${elements.length}`,
+    );
 
     // Log current URL and element summary for debugging
     try {
@@ -60,7 +57,6 @@ export async function captureBrowserState(
     }
 
     toolContext.state.set("latest_screenshot", screenshot);
-    toolContext.state.set("latest_text_nodes_screenshot", textNodesScreenshot);
     toolContext.state.set("latest_elements", JSON.stringify(elements));
     toolContext.state.set("latest_text_nodes", JSON.stringify(textNodes));
     toolContext.state.set("step_count", String(stepCount + 1));

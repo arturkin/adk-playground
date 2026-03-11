@@ -175,5 +175,16 @@
     "failedStep": 6,
     "consecutiveFailures": 2,
     "resolved": true
+  },
+  {
+    "testId": "tests/filter-tour-dates.md",
+    "runId": "run-1773188410984",
+    "timestamp": "2026-03-11T00:21:42.439Z",
+    "failureReason": "2 assertion(s) failed",
+    "failureCategory": "assertion_mismatch",
+    "analysis": "Test failed with status: failed. 2 of 5 assertions failed. Validation: \n\nAll done.The automated test for \"Search Tours Filters with dates\" has been executed.\n\n**Summary of findings:**\n- **Navigation and Widget:** Successfully located the search widget and selected dates ...",
+    "advice": "Review the specific failed assertions: \"Requested filters are applied, check filters panel to see if they are applied\", \"Fail the test if one of the requested filters 1-4 was not applied\". Check if the expected state matches what's actually visible on the page.",
+    "consecutiveFailures": 1,
+    "resolved": true
   }
 ]

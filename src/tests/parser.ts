@@ -56,6 +56,22 @@ export function parseTestCase(filePath: string): TestCase {
           index: parseInt(stepMatch[1], 10),
           instruction: stepMatch[2].trim(),
         });
+      } else if (steps.length > 0) {
+        // Check for indented assertion checkboxes under the current step
+        const rawLine = lines[i];
+        const stepAssertionMatch = rawLine.match(
+          /^\s+-\s+\[\s*([x ]?)\s*\]\s+(.*)$/,
+        );
+        if (stepAssertionMatch) {
+          const currentStep = steps[steps.length - 1];
+          if (!currentStep.assertions) {
+            currentStep.assertions = [];
+          }
+          currentStep.assertions.push({
+            description: stepAssertionMatch[2].trim(),
+            passed: stepAssertionMatch[1].toLowerCase() === "x",
+          });
+        }
       }
     } else if (currentSection === "expected outcome") {
       if (line) {

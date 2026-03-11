@@ -356,7 +356,8 @@ export async function tagTextNodes(
         labelEl.className = "ai-text-marker";
         labelEl.innerText = textId;
 
-        const posMode = renderIndex % 3;
+        // Offset by +2 so text labels use a different corner than interactive (red) labels
+        const posMode = (renderIndex + 2) % 3;
         const labelHeightApprox = 20;
         let left = rect.left + window.scrollX;
         let top = rect.top + window.scrollY;

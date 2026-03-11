@@ -1,6 +1,7 @@
 export interface TestStep {
   index: number;
   instruction: string;
+  assertions?: TestAssertion[];
 }
 
 export interface TestAssertion {

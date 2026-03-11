@@ -12,6 +12,9 @@ export function buildEvaluatorAgent(config: AppConfig) {
 ASSERTIONS RECORDED BY VALIDATOR:
 {assertions}
 
+STEP ASSERTIONS RECORDED BY NAVIGATOR:
+{step_assertions}
+
 VALIDATOR VERDICT:
 {validation_result}
 

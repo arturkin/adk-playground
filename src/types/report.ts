@@ -20,6 +20,14 @@ export interface BugReport {
   timestamp: string;
 }
 
+export interface StepAssertionResult {
+  stepIndex: number;
+  stepInstruction: string;
+  passed: boolean;
+  evidence: string;
+  timestamp: string;
+}
+
 export interface AssertionResult {
   description: string;
   passed: boolean;
@@ -44,6 +52,7 @@ export interface TestCaseResult {
   screenshots: string[];
   agentOutput: string;
   validationOutput?: string;
+  stepAssertions?: StepAssertionResult[];
   evaluationResult?: EvaluationResult;
   error?: string;
 }

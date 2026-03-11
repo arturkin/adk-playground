@@ -10,7 +10,7 @@
 ## Steps
 
 1. Locate search widget
-2. In search widget, locate date picker with label "Starting date" and press it.
+2. In search widget, locate date picker with label "Starting date" and click it
 3. Locate date picker pop up
 4. Choose random dates, few weeks in advance for the 3-7 days duration.
 5. Make sure from and to dates are selected correctly.

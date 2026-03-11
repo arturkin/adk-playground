@@ -2,7 +2,7 @@ import { createRunner } from "../agents/index.js";
 import { getBrowserManager } from "../browser/index.js";
 import { type AppConfig } from "../config/schema.js";
 import { TestCase, TestSuite } from "../types/test.js";
-import { TestRunResult, TestCaseResult, BugReport, EvaluationResult } from "../types/report.js";
+import { TestRunResult, TestCaseResult, BugReport, EvaluationResult, StepAssertionResult } from "../types/report.js";
 import {
   runStore,
   lessonStore,
@@ -51,8 +51,29 @@ export async function runTestCase(
     // We launch browser for each test to ensure clean state
     await browser.launch(config.headless);
 
+    // Build step assertions JSON for the tool to reference
+    const stepAssertionsForState: { stepIndex: number; id: number; description: string }[] = [];
+    let stepAssertionIdCounter = 1;
+
     const formattedSteps = testCase.steps
-      .map((s) => `${s.index}. ${s.instruction}`)
+      .map((s) => {
+        let line = `${s.index}. ${s.instruction}`;
+        const assertions =
+          s.assertions && s.assertions.length > 0
+            ? s.assertions
+            : [{ description: `Step ${s.index} completed successfully: ${s.instruction}` }];
+        line += `\n   Assertions for step ${s.index}:`;
+        for (const a of assertions) {
+          const id = stepAssertionIdCounter++;
+          stepAssertionsForState.push({
+            stepIndex: s.index,
+            id,
+            description: a.description,
+          });
+          line += `\n   - ID ${id}: "${a.description}"`;
+        }
+        return line;
+      })
       .join("\n");
 
     const session = await runner.sessionService.createSession({
@@ -79,6 +100,9 @@ export async function runTestCase(
             description: a.description,
           })),
         ),
+        // Per-step assertions for the navigator
+        step_assertions_json: JSON.stringify(stepAssertionsForState),
+        step_assertions: "[]",
       },
     });
 
@@ -128,6 +152,9 @@ export async function runTestCase(
     const assertionsJson =
       (sessionDetails?.state?.["assertions"] as string) || "[]";
     const assertions = JSON.parse(assertionsJson);
+    const stepAssertionsJson =
+      (sessionDetails?.state?.["step_assertions"] as string) || "[]";
+    const stepAssertions: StepAssertionResult[] = JSON.parse(stepAssertionsJson);
     const evaluationJson =
       (sessionDetails?.state?.["evaluation_result"] as string) || "";
     const evaluation = evaluationJson ? JSON.parse(evaluationJson) : null;
@@ -171,27 +198,32 @@ export async function runTestCase(
     // or when none were recorded at all. Missing-but-all-passing = inconclusive.
     const anyAssertionFailed = someExplicitlyFailed;
 
-    // Signal 3: bugs found (structural safeguard)
+    // Signal 3: step assertions
+    const hasStepAssertionFailures = stepAssertions.some((sa) => !sa.passed);
+
+    // Signal 4: bugs found (structural safeguard)
     const hasSeriousBugs = bugs.some((b: BugReport) =>
       ["critical", "high", "medium"].includes(b.severity),
     );
 
-    // Signal 4: test expects assertions but none were recorded
+    // Signal 5: test expects assertions but none were recorded
     const noAssertionsRecorded =
       expectedAssertionCount > 0 && assertions.length === 0;
 
     // Decision logic
-    if (validatorSaysFail || anyAssertionFailed) {
+    if (validatorSaysFail || anyAssertionFailed || hasStepAssertionFailures) {
       status = "failed";
-      if (validatorSaysFail && anyAssertionFailed) {
+      const reasons: string[] = [];
+      if (validatorSaysFail) reasons.push("Validator said FAIL");
+      if (anyAssertionFailed) {
         const failedCount = assertions.filter((a: any) => !a.passed).length;
-        statusReason = `Validator said FAIL + ${failedCount} assertion(s) explicitly failed`;
-      } else if (validatorSaysFail) {
-        statusReason = "Validator explicitly said FAIL";
-      } else {
-        const failedCount = assertions.filter((a: any) => !a.passed).length;
-        statusReason = `${failedCount} assertion(s) explicitly failed`;
+        reasons.push(`${failedCount} assertion(s) explicitly failed`);
       }
+      if (hasStepAssertionFailures) {
+        const failedStepCount = stepAssertions.filter((sa) => !sa.passed).length;
+        reasons.push(`${failedStepCount} step assertion(s) failed`);
+      }
+      statusReason = reasons.join(" + ");
     } else if (hasSeriousBugs) {
       status = "failed";
       const serious = bugs.filter((b: BugReport) => ["critical", "high", "medium"].includes(b.severity));
@@ -223,7 +255,7 @@ export async function runTestCase(
       statusReason = `Mixed signals — validator: "${validationResult.substring(0, 60) || "(empty)"}", assertions: ${assertions.length}/${expectedAssertionCount}`;
     }
 
-    // Signal 5: evaluator override (applies after initial status is set)
+    // Signal 6: evaluator override (applies after initial status is set)
     if (evaluation) {
       if (evaluation.override === "FAIL" && status !== "failed") {
         status = "failed";
@@ -250,6 +282,7 @@ export async function runTestCase(
       duration: Date.now() - startTime,
       bugs,
       assertions,
+      stepAssertions: stepAssertions.length > 0 ? stepAssertions : undefined,
       screenshots: screenshotFiles,
       agentOutput: finalReport,
       validationOutput: validationResult,

@@ -1,6 +1,92 @@
 import { FunctionTool } from "@google/adk";
 import { z } from "zod";
 
+const presenceIndicators = [
+  "is visible",
+  "are visible",
+  "is displayed",
+  "are displayed",
+  "is present",
+  "are present",
+  "exists",
+  "exist",
+  "is found",
+  "are found",
+  "at least one",
+  "at least",
+  "is shown",
+  "are shown",
+  "is loaded",
+  "are loaded",
+];
+
+const absenceIndicators = [
+  "not found",
+  "not visible",
+  "not present",
+  "not displayed",
+  "does not exist",
+  "no results",
+  "was not",
+  "cannot find",
+  "unable to find",
+  "could not find",
+  "couldn't find",
+  "did not find",
+  "didn't find",
+  "is missing",
+  "are missing",
+  "absent",
+  "absence",
+  "nowhere",
+  "not on the page",
+  "0 results",
+  "zero results",
+  "no matching",
+  "not shown",
+  "does not contain",
+  "does not have",
+  "were not",
+  "is not",
+  "are not",
+  "wasn't",
+  "aren't",
+  "not located",
+  "not detected",
+  "not identified",
+];
+
+/**
+ * Structural safeguard: detect contradiction between evidence and passed status.
+ * If the assertion expects something to be present/visible, but the evidence
+ * describes absence, override passed=true to passed=false.
+ * Mutates the record in-place.
+ */
+function applyPresenceAbsenceSafeguard(record: {
+  description: string;
+  passed: boolean;
+  evidence: string;
+}): void {
+  if (record.passed !== true) return;
+
+  const descLower = record.description.toLowerCase();
+  const assertionExpectsPresence = presenceIndicators.some((p) =>
+    descLower.includes(p),
+  );
+
+  const evidenceLower = record.evidence.toLowerCase();
+  const evidenceIndicatesAbsence =
+    absenceIndicators.some((p) => evidenceLower.includes(p)) ||
+    /\bno\s+\w+.*?\b(found|visible|present|displayed|shown|exist|appeared|detected)\b/i.test(
+      record.evidence,
+    );
+
+  if (assertionExpectsPresence && evidenceIndicatesAbsence) {
+    record.passed = false;
+    record.evidence = `[AUTO-CORRECTED: Assertion expects presence but evidence indicates absence] ${record.evidence}`;
+  }
+}
+
 const evaluationParamsSchema = z.object({
   confidence: z
     .number()
@@ -116,81 +202,7 @@ export const recordAssertionTool = new FunctionTool({
       timestamp: new Date().toISOString(),
     };
 
-    // Structural safeguard: detect contradiction between evidence and passed status.
-    // If the assertion expects something to be present/visible, but the evidence
-    // describes absence, override passed=true to passed=false.
-    if (record.passed === true) {
-      const descLower = record.description.toLowerCase();
-      const presenceIndicators = [
-        "is visible",
-        "are visible",
-        "is displayed",
-        "are displayed",
-        "is present",
-        "are present",
-        "exists",
-        "exist",
-        "is found",
-        "are found",
-        "at least one",
-        "at least",
-        "is shown",
-        "are shown",
-        "is loaded",
-        "are loaded",
-      ];
-      const assertionExpectsPresence = presenceIndicators.some((p) =>
-        descLower.includes(p),
-      );
-
-      const evidenceLower = record.evidence.toLowerCase();
-      const absenceIndicators = [
-        "not found",
-        "not visible",
-        "not present",
-        "not displayed",
-        "does not exist",
-        "no results",
-        "was not",
-        "cannot find",
-        "unable to find",
-        "could not find",
-        "couldn't find",
-        "did not find",
-        "didn't find",
-        "is missing",
-        "are missing",
-        "absent",
-        "absence",
-        "nowhere",
-        "not on the page",
-        "0 results",
-        "zero results",
-        "no matching",
-        "not shown",
-        "does not contain",
-        "does not have",
-        "were not",
-        "is not",
-        "are not",
-        "wasn't",
-        "aren't",
-        "not located",
-        "not detected",
-        "not identified",
-      ];
-      const evidenceIndicatesAbsence =
-        absenceIndicators.some((p) => evidenceLower.includes(p)) ||
-        // Also catch "No <X> found/visible/present/..." patterns (e.g., "No Amazon product listings found")
-        /\bno\s+\w+.*?\b(found|visible|present|displayed|shown|exist|appeared|detected)\b/i.test(
-          record.evidence,
-        );
-
-      if (assertionExpectsPresence && evidenceIndicatesAbsence) {
-        record.passed = false;
-        record.evidence = `[AUTO-CORRECTED: Assertion expects presence but evidence indicates absence] ${record.evidence}`;
-      }
-    }
+    applyPresenceAbsenceSafeguard(record);
 
     assertions.push(record);
     toolContext.state.set("assertions", JSON.stringify(assertions));
@@ -213,6 +225,51 @@ export const recordAssertionTool = new FunctionTool({
     return {
       status: "success",
       message,
+    };
+  },
+});
+
+const stepAssertionParamsSchema = z.object({
+  stepIndex: z
+    .number()
+    .describe("The step number this assertion belongs to"),
+  description: z
+    .string()
+    .describe("The assertion description (copy from the step assertions list)"),
+  passed: z.boolean().describe("Whether the assertion passed or failed"),
+  evidence: z
+    .string()
+    .describe("Specific visual evidence from the current screenshot"),
+});
+
+export const recordStepAssertionTool = new FunctionTool({
+  name: "record_step_assertion",
+  description:
+    "Records a pass/fail result for a per-step assertion. Call this after completing a step that has assertions listed below it.",
+  parameters: stepAssertionParamsSchema as any,
+  execute: async (params: any, toolContext) => {
+    if (!toolContext) throw new Error("ToolContext is required");
+
+    const stepAssertions = JSON.parse(
+      toolContext.state.get("step_assertions") || "[]",
+    );
+
+    const record = {
+      stepIndex: params.stepIndex,
+      description: params.description,
+      passed: params.passed,
+      evidence: params.evidence,
+      timestamp: new Date().toISOString(),
+    };
+
+    applyPresenceAbsenceSafeguard(record);
+
+    stepAssertions.push(record);
+    toolContext.state.set("step_assertions", JSON.stringify(stepAssertions));
+
+    return {
+      status: "success",
+      message: `Step ${params.stepIndex} assertion recorded: "${params.description}" (${record.passed ? "PASSED" : "FAILED"})`,
     };
   },
 });

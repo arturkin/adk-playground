@@ -59,6 +59,9 @@ export function buildNavigatorAgent(config: AppConfig) {
     - Be precise and avoid unnecessary steps.
     - NEVER ask the user for information — you have everything you need above.
 
+    PER-STEP ASSERTIONS:
+    Some steps have assertions listed below them. After completing a step that has assertions, you MUST call 'record_step_assertion' for EACH assertion BEFORE moving to the next step. Use the current screenshot (which you already have) as evidence. Do not take extra screenshots for this — use what you see.
+
 {failure_lessons}`,
     tools: [
       tools.navigateTool,
@@ -68,6 +71,7 @@ export function buildNavigatorAgent(config: AppConfig) {
       tools.typeElementTool,
       tools.pressKeyTool,
       tools.taskCompletedTool,
+      tools.recordStepAssertionTool,
     ],
     outputKey: "navigation_result",
     generateContentConfig: {

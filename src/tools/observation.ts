@@ -23,22 +23,14 @@ export const takeScreenshotTool = new FunctionTool({
       // Clear stale markers from previous capture cycle
       await clearMarkers();
 
-      // Phase 1: Tag text nodes and capture screenshot
+      // Tag text nodes (blue, offset posMode) then interactive elements (red)
       const textNodes = await tagTextNodes(0);
-      // Delay to ensure browser paints the markers before screenshot
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      const textNodesScreenshot = await getScreenshot();
-
-      // Phase 2: Clear text markers, tag interactive elements, capture screenshot
-      await clearMarkers();
       const elements = await tagElements(0);
+
+      // Single screenshot with both marker types visible
       const screenshot = await getScreenshot();
 
       toolContext.state.set("latest_screenshot", screenshot);
-      toolContext.state.set(
-        "latest_text_nodes_screenshot",
-        textNodesScreenshot,
-      );
       toolContext.state.set("latest_elements", JSON.stringify(elements));
       toolContext.state.set("latest_text_nodes", JSON.stringify(textNodes));
 
