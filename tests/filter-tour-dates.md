@@ -26,6 +26,7 @@
    - [ ] Duration filter is applied
 9. FILTER 4: Apply Destination filter, choose "Blue Lagoon"
    - [ ] "Blue Lagoon" destination filter is applied
+10. FILTER 5: Choose Starting location in filters to be "Keflavik airport"
 
 ## Expected Outcome
 
@@ -36,5 +37,5 @@ Search results page loads and displays Tour card filtered by selected criteria.
 - [ ] Search results page is displayed
 - [ ] Several Tour Cards are visible
 - [ ] Requested filters are applied, check filters panel to see if they are applied
-- [ ] Fail the test if one of the requested filters 1-4 was not applied
+- [ ] Fail the test if one of the requested filters was not applied
 
