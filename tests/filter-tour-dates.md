@@ -17,7 +17,7 @@
    - [ ] Selected dates are highlighted in the date picker
 5. FILTER 2: In search widget, interact with "Choose experience" input field and pick "Sightseeing"
    - [ ] "Sightseeing" is shown as selected experience in filters on the left side of the screen
-6. Perform Search
+6. Click Search Now button
    - [ ] Search results page is loaded
    - [ ] At least one Tour Card is visible
 7. Locate filters on the left side of the page

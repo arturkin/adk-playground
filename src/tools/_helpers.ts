@@ -1,4 +1,4 @@
-import { type ToolContext } from "@google/adk";
+import { type Context } from "@google/adk";
 import {
   tagElements,
   tagTextNodes,
@@ -16,7 +16,7 @@ import {
  * @returns The number of interactive elements found.
  */
 export async function captureBrowserState(
-  toolContext: ToolContext,
+  toolContext: Context,
 ): Promise<number> {
   // Wait for UI stabilization (CSS transitions, framework render cycles)
   await new Promise((resolve) => setTimeout(resolve, 1000));

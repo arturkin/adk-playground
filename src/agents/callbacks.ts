@@ -1,5 +1,5 @@
 import {
-  type CallbackContext,
+  type Context,
   type LlmRequest,
   type LlmResponse,
 } from "@google/adk";
@@ -19,7 +19,7 @@ import {
 export const emptyResponseNudgeCallback = ({
   response,
 }: {
-  context: CallbackContext;
+  context: Context;
   response: LlmResponse;
 }): LlmResponse | undefined => {
   if (!response.content) {
@@ -62,7 +62,7 @@ export const validatorAssertionReminderCallback = async ({
   context,
   request,
 }: {
-  context: CallbackContext;
+  context: Context;
   request: LlmRequest;
 }): Promise<LlmResponse | undefined> => {
   const assertionCountStr = context.state.get("assertion_count") as
@@ -110,7 +110,7 @@ export const injectScreenshotCallback = async ({
   context,
   request,
 }: {
-  context: CallbackContext;
+  context: Context;
   request: LlmRequest;
 }): Promise<LlmResponse | undefined> => {
   const screenshot = context.state.get("latest_screenshot");

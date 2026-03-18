@@ -5,10 +5,10 @@ function loadConfig(): AppConfig {
   const config = {
     apiKey: process.env.GOOGLE_GENAI_API_KEY || "",
     models: {
-      navigator: getModelName(process.env.NAVIGATOR_MODEL || "flash25"),
-      validator: getModelName(process.env.VALIDATOR_MODEL || "flash25"),
-      reporter: getModelName(process.env.REPORTER_MODEL || "flash25"),
-      evaluator: getModelName(process.env.EVALUATOR_MODEL || "flash25"),
+      navigator: getModelName(process.env.NAVIGATOR_MODEL || "flash3"),
+      validator: getModelName(process.env.VALIDATOR_MODEL || "flash3"),
+      reporter: getModelName(process.env.REPORTER_MODEL || "flash3"),
+      evaluator: getModelName(process.env.EVALUATOR_MODEL || "flash3"),
     },
     thinkingBudgets: {
       navigator: process.env.NAVIGATOR_THINKING_BUDGET !== undefined

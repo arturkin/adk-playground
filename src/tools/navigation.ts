@@ -1,4 +1,4 @@
-import { FunctionTool, type ToolContext } from "@google/adk";
+import { FunctionTool, type Context } from "@google/adk";
 import { z } from "zod";
 import { getBrowserManager, navigateTo, scrollPage } from "../browser/index.js";
 import { captureBrowserState } from "./_helpers.js";

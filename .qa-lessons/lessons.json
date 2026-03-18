@@ -186,5 +186,16 @@
     "advice": "Review the specific failed assertions: \"Requested filters are applied, check filters panel to see if they are applied\", \"Fail the test if one of the requested filters 1-4 was not applied\". Check if the expected state matches what's actually visible on the page.",
     "consecutiveFailures": 1,
     "resolved": true
+  },
+  {
+    "testId": "tests/search-tour.md",
+    "runId": "run-1773323291612",
+    "timestamp": "2026-03-12T13:49:55.103Z",
+    "failureReason": "2 assertion(s) failed",
+    "failureCategory": "assertion_mismatch",
+    "analysis": "Test failed with status: failed. 2 of 5 assertions failed. Validation: The automated test \"Search Tour\" was executed on https://guidetoiceland.is. \n\n**Execution Summary:**\n- **Navigation & Search:** Successfully located the search widget and performed a search.\n- **Date ...",
+    "advice": "Review the specific failed assertions: \"Test add Tour product to cart\", \"Test proceeds to checkout\". Check if the expected state matches what's actually visible on the page.",
+    "consecutiveFailures": 1,
+    "resolved": false
   }
 ]

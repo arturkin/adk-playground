@@ -1,4 +1,4 @@
-import { FunctionTool, type ToolContext } from "@google/adk";
+import { FunctionTool, type Context } from "@google/adk";
 import { z } from "zod";
 
 const taskCompletedParamsSchema = z.object({

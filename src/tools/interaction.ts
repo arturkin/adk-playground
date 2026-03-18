@@ -1,4 +1,4 @@
-import { FunctionTool, type ToolContext } from "@google/adk";
+import { FunctionTool, type Context } from "@google/adk";
 import { z } from "zod";
 import {
   clickElement,
@@ -12,7 +12,7 @@ import { captureBrowserState } from "./_helpers.js";
 /**
  * Looks up the element metadata from latest_elements state by ID.
  */
-function getElementMeta(toolContext: ToolContext, id: number): any {
+function getElementMeta(toolContext: Context, id: number): any {
   try {
     const elements = JSON.parse(
       (toolContext.state.get("latest_elements") as string) || "[]",
