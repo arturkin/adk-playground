@@ -11,9 +11,9 @@
 
 1. Locate search widget
 2. In search widget, locate "Select flights" label
-3. Click flying from field, type New York, wait for the pop up to open and choose from the list
+3. Click flying from field, type New York, click on the field. Wait for the pop up to open and click on the list item in a popup
    - [ ] Make sure origin set as NY 
-4. Click flying to field, type Reykjavik, wait for the pop up to open and choose from the list
+4. Click flying to field, type Reykjavik,click on the field. Wait for the pop up to open and click on the list item in a popup
    - [ ] Make sure destination set as Reykjavik 
 5. In search widget, locate date picker with label "Select travel dates" and click on the starting date.
 6. Locate a date picker pop up
@@ -22,8 +22,8 @@
 8. Press search now button
    - [ ]  Search results page is loaded
    - [ ]  At least one Flight Card is visible
-9. Use filters on the left, locate "Choose class" popup and choose Business class
-   - [ ] Make sure business class is selected
+9. On the left top side of the page, locate Choose class "Econ..." button press it and choose Business
+   - [ ] Make sure business is selected
 10. Press search and validate that flights on the page are business class flights
 
 
