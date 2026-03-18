@@ -7,7 +7,7 @@ import {
   hoverElement,
   getBrowserManager,
 } from "../browser/index.js";
-import { captureBrowserState } from "./_helpers.js";
+import { captureBrowserState } from "./helpers.js";
 
 /**
  * Looks up the element metadata from latest_elements state by ID.

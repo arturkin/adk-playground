@@ -197,5 +197,16 @@
     "advice": "Review the specific failed assertions: \"Test add Tour product to cart\", \"Test proceeds to checkout\". Check if the expected state matches what's actually visible on the page.",
     "consecutiveFailures": 1,
     "resolved": false
+  },
+  {
+    "testId": "tests/flight-search.md",
+    "runId": "run-1773854956167",
+    "timestamp": "2026-03-18T17:30:44.255Z",
+    "failureReason": "2 assertion(s) failed",
+    "failureCategory": "assertion_mismatch",
+    "analysis": "Test failed with status: failed. 2 of 5 assertions failed. Validation: The automated test for searching flights with dates has been executed.\n\n**Summary of execution:**\n1.  **Search Widget:** Located the search widget successfully.\n2.  **Origin/Destination:** Set \"New Yo...",
+    "advice": "Review the specific failed assertions: \"Requested filters are applied, check filters panel to see if they are applied\", \"Fail the test if one of the requested filters was not applied\". Check if the expected state matches what's actually visible on the page.",
+    "consecutiveFailures": 1,
+    "resolved": true
   }
 ]

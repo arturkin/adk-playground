@@ -1,7 +1,7 @@
 import { FunctionTool, type Context } from "@google/adk";
 import { z } from "zod";
 import { getBrowserManager, navigateTo, scrollPage } from "../browser/index.js";
-import { captureBrowserState } from "./_helpers.js";
+import { captureBrowserState } from "./helpers.js";
 
 const paramsSchema = z.object({
   url: z.string().url().describe("The URL to navigate to"),
