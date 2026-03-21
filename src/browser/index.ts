@@ -20,6 +20,11 @@ export async function launchBrowser() {
   return await manager.launch(isHeadless);
 }
 
+export async function connectCDP(endpoint: string) {
+  const manager = getBrowserManager();
+  return await manager.connectCDP(endpoint);
+}
+
 export async function closeBrowser() {
   await getBrowserManager().close();
 }
@@ -69,9 +74,11 @@ export async function pressKey(key: string) {
   return await actions.pressKey(page, key);
 }
 
-export async function captureAccessibilitySnapshot() {
+export async function captureAccessibilitySnapshot(options?: {
+  incremental?: boolean;
+}) {
   const page = await getBrowserManager().getActivePage();
-  return await accessibility.captureAccessibilitySnapshot(page);
+  return await accessibility.captureAccessibilitySnapshot(page, options);
 }
 
 export async function resolveRef(ref: string) {

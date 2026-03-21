@@ -4,9 +4,12 @@ import type { AccessibilityElement } from "../types/browser.js";
 /**
  * Extend Playwright's Page with the private _snapshotForAI API.
  * This is used by @playwright/mcp internally and is not part of the public API.
+ * With Playwright 1.58+, passing { track: "response" } enables incremental diffs.
  */
 interface PageWithSnapshot extends Page {
-  _snapshotForAI?: () => Promise<{ full: string }>;
+  _snapshotForAI?: (options?: {
+    track?: string;
+  }) => Promise<{ full: string; incremental?: string }>;
 }
 
 /**
@@ -24,8 +27,30 @@ declare global {
 export interface AccessibilitySnapshot {
   /** Parsed elements with refs for structured lookup */
   elements: AccessibilityElement[];
-  /** Raw YAML tree text for LLM consumption */
+  /** Raw YAML tree text for LLM consumption (may be incremental diff) */
   tree: string;
+  /** Whether this snapshot is an incremental diff rather than a full tree */
+  isIncremental: boolean;
+}
+
+/** Options for capturing an accessibility snapshot */
+export interface SnapshotOptions {
+  /** Request an incremental diff instead of full tree (after first capture) */
+  incremental?: boolean;
+}
+
+/**
+ * Tracks whether snapshot tracking has been initialized for the current session.
+ * Reset between test cases via resetSnapshotTracking().
+ */
+let trackingInitialized = false;
+
+/**
+ * Resets snapshot tracking state. Call between test cases or when closing browser
+ * to ensure a fresh full snapshot on the next capture.
+ */
+export function resetSnapshotTracking(): void {
+  trackingInitialized = false;
 }
 
 /**
@@ -33,10 +58,14 @@ export interface AccessibilitySnapshot {
  * _snapshotForAI() API. Returns both the raw YAML tree (for the LLM) and
  * parsed elements with refs (for programmatic lookup).
  *
+ * With Playwright 1.58+, passing { incremental: true } after the first capture
+ * returns only the changes since the last snapshot, reducing token cost.
+ *
  * This uses the same API that @playwright/mcp uses internally.
  */
 export async function captureAccessibilitySnapshot(
   page: PageWithSnapshot,
+  options: SnapshotOptions = {},
 ): Promise<AccessibilitySnapshot> {
   if (typeof page._snapshotForAI !== "function") {
     throw new Error(
@@ -44,11 +73,33 @@ export async function captureAccessibilitySnapshot(
     );
   }
 
-  const result = await page._snapshotForAI();
+  const result = await page._snapshotForAI({ track: "response" });
+
+  // Determine whether to use incremental diff or full tree
+  const useIncremental =
+    options.incremental &&
+    trackingInitialized &&
+    result.incremental !== undefined &&
+    result.incremental !== null;
+
+  // Mark tracking as initialized after first call
+  trackingInitialized = true;
+
+  if (useIncremental && result.incremental === "") {
+    // Empty string means no changes since last snapshot
+    return { elements: [], tree: "(no changes)", isIncremental: true };
+  }
+
+  if (useIncremental && result.incremental) {
+    // Incremental diff with actual changes
+    const elements = parseAccessibilityTree(result.incremental);
+    return { elements, tree: result.incremental, isIncremental: true };
+  }
+
+  // Full tree (first call, major page change, or incremental not requested)
   const tree = result.full;
   const elements = parseAccessibilityTree(tree);
-
-  return { elements, tree };
+  return { elements, tree, isIncremental: false };
 }
 
 /**

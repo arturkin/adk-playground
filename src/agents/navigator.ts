@@ -74,6 +74,14 @@ export function buildNavigatorAgent(config: AppConfig) {
     - Be precise and avoid unnecessary steps.
     - NEVER ask the user for information — you have everything you need above.
 
+    INCREMENTAL SNAPSHOTS:
+    After your first action, you may receive an incremental diff instead of the full accessibility tree.
+    - Lines with [unchanged] mean those elements still exist with the same properties.
+    - New elements appear with full details and new ref identifiers.
+    - <changed> markers indicate a subtree that was modified.
+    - Element refs from previous observations remain valid unless the element disappeared from the diff.
+    - If you see "Page accessibility tree unchanged", all previously observed refs are still valid.
+
     PER-STEP ASSERTIONS:
     Some steps have assertions listed below them. After completing a step that has assertions, you MUST call 'record_step_assertion' for EACH assertion BEFORE moving to the next step. Use the current accessibility tree as evidence. Do not take extra actions for this — use what you see.
 

@@ -27,13 +27,21 @@ export async function captureBrowserState(
     await forceSingleTab();
 
     // Capture accessibility snapshot (for navigator)
-    const { elements, tree } = await captureAccessibilitySnapshot();
+    // After the first capture, request incremental diffs to reduce token cost
+    const useIncremental = stepCount > 0;
+    const { elements, tree, isIncremental } =
+      await captureAccessibilitySnapshot({ incremental: useIncremental });
 
     // Capture clean screenshot (for validator use later)
     const screenshot = await getScreenshot();
 
+    const snapshotLabel = isIncremental
+      ? tree === "(no changes)"
+        ? "incremental (no changes)"
+        : "incremental diff"
+      : "full";
     console.log(
-      `    \x1b[34m[capture]\x1b[0m Accessibility elements: ${elements.length}`,
+      `    \x1b[34m[capture]\x1b[0m Accessibility elements: ${elements.length} (${snapshotLabel})`,
     );
 
     // Log current URL and element summary for debugging
@@ -42,20 +50,29 @@ export async function captureBrowserState(
       console.log(
         `    \x1b[34m[capture]\x1b[0m URL: ${page.url()} | Elements: ${elements.length} | Step: ${stepCount}`,
       );
-      // Log a summary of element roles
-      const roleCounts: Record<string, number> = {};
-      for (const el of elements) {
-        roleCounts[el.role] = (roleCounts[el.role] || 0) + 1;
+      // Log a summary of element roles (skip for no-change snapshots)
+      if (elements.length > 0) {
+        const roleCounts: Record<string, number> = {};
+        for (const el of elements) {
+          roleCounts[el.role] = (roleCounts[el.role] || 0) + 1;
+        }
+        console.log(
+          `    \x1b[34m[capture]\x1b[0m Role breakdown: ${JSON.stringify(roleCounts)}`,
+        );
       }
-      console.log(
-        `    \x1b[34m[capture]\x1b[0m Role breakdown: ${JSON.stringify(roleCounts)}`,
-      );
     } catch {
       /* ignore logging errors */
     }
 
-    toolContext.state.set("latest_accessibility_tree", tree);
-    toolContext.state.set("latest_elements", JSON.stringify(elements));
+    // For incremental no-change snapshots, keep previous state intact
+    if (!(isIncremental && tree === "(no changes)")) {
+      toolContext.state.set("latest_accessibility_tree", tree);
+      toolContext.state.set("latest_elements", JSON.stringify(elements));
+    }
+    toolContext.state.set(
+      "latest_snapshot_is_incremental",
+      isIncremental ? "true" : "false",
+    );
     toolContext.state.set("latest_screenshot", screenshot);
     toolContext.state.set("step_count", String(stepCount + 1));
 

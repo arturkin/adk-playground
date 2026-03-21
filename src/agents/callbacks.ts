@@ -121,6 +121,8 @@ export const injectScreenshotCallback = async ({
 }): Promise<LlmResponse | undefined> => {
   const accessibilityTree = context.state.get("latest_accessibility_tree");
   const elements = context.state.get("latest_elements");
+  const isIncremental =
+    context.state.get("latest_snapshot_is_incremental") === "true";
 
   if (accessibilityTree) {
     const lastMessage = request.contents[request.contents.length - 1];
@@ -129,13 +131,23 @@ export const injectScreenshotCallback = async ({
       lastMessage.parts = [];
     }
 
-    // Inject the accessibility tree as the primary context
-    lastMessage.parts.push({
-      text: `\n\nCurrent page accessibility tree (use refs like e1, e2 to interact with elements):\n\`\`\`\n${accessibilityTree}\n\`\`\``,
-    });
+    // Label differs for incremental diffs vs full snapshots
+    if (isIncremental && accessibilityTree === "(no changes)") {
+      lastMessage.parts.push({
+        text: "\n\nPage accessibility tree unchanged since last observation. All previously seen element refs remain valid.",
+      });
+    } else if (isIncremental) {
+      lastMessage.parts.push({
+        text: `\n\nIncremental accessibility tree diff (changes since last snapshot — [unchanged] refs are still valid):\n\`\`\`\n${accessibilityTree}\n\`\`\``,
+      });
+    } else {
+      lastMessage.parts.push({
+        text: `\n\nCurrent page accessibility tree (use refs like e1, e2 to interact with elements):\n\`\`\`\n${accessibilityTree}\n\`\`\``,
+      });
+    }
 
-    // Add structured element metadata for easier lookup
-    if (elements) {
+    // Add structured element metadata for easier lookup (skip for no-change snapshots)
+    if (elements && !(isIncremental && accessibilityTree === "(no changes)")) {
       lastMessage.parts.push({
         text: `\n\nAccessible elements metadata (JSON):\n${elements}`,
       });

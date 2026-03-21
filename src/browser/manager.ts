@@ -5,6 +5,7 @@ import {
   type Page,
 } from "playwright";
 import type { ViewportConfig } from "../types/browser.js";
+import { resetSnapshotTracking } from "./accessibility.js";
 
 export type { Browser, BrowserContext, Page } from "playwright";
 
@@ -81,6 +82,65 @@ export class BrowserManager {
     return { browser: this.browser, page: this.page };
   }
 
+  public async connectCDP(
+    endpoint: string,
+  ): Promise<{ browser: Browser; page: Page }> {
+    if (this.browser && this.browser.isConnected()) {
+      if (this.page) {
+        await this.page.setViewportSize({
+          width: this.viewport.width,
+          height: this.viewport.height,
+        });
+      }
+      return { browser: this.browser, page: this.page! };
+    }
+
+    // Clean up disconnected browser
+    if (this.browser && !this.browser.isConnected()) {
+      this.browser = null;
+      this.context = null;
+      this.page = null;
+    }
+
+    this.browser = await chromium.connectOverCDP(endpoint, { isLocal: true });
+
+    // Get existing context or create new one
+    const contexts = this.browser.contexts();
+    this.context =
+      contexts.length > 0
+        ? contexts[0]
+        : await this.browser.newContext({
+            viewport: {
+              width: this.viewport.width,
+              height: this.viewport.height,
+            },
+            userAgent: "Travelshift/QA",
+          });
+
+    // Single-tab enforcement
+    this.context.on("page", (newPage: Page) => {
+      const oldPage = this.page;
+      this.page = newPage;
+      if (oldPage && oldPage !== newPage) {
+        oldPage.close().catch(() => {});
+      }
+    });
+
+    // Get existing page or create new one
+    const pages = this.context.pages();
+    this.page =
+      pages.length > 0
+        ? pages[pages.length - 1]
+        : await this.context.newPage();
+
+    await this.page.setViewportSize({
+      width: this.viewport.width,
+      height: this.viewport.height,
+    });
+
+    return { browser: this.browser, page: this.page };
+  }
+
   /**
    * Returns the currently active page, recovering if the page was closed
    * (e.g., due to navigation opening a new tab/page).
@@ -109,6 +169,9 @@ export class BrowserManager {
   }
 
   public async close(): Promise<void> {
+    // Reset incremental snapshot tracking for next session
+    resetSnapshotTracking();
+
     if (this.browser) {
       try {
         await this.browser.close();

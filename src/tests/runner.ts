@@ -56,7 +56,11 @@ export async function runTestCase(
 
   try {
     // We launch browser for each test to ensure clean state
-    await browser.launch(config.headless);
+    if (config.cdpEndpoint) {
+      await browser.connectCDP(config.cdpEndpoint);
+    } else {
+      await browser.launch(config.headless);
+    }
 
     // Build step assertions JSON for the tool to reference
     const stepAssertionsForState: {

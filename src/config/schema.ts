@@ -29,6 +29,7 @@ export const ConfigSchema = z.object({
       reporter: 0,
       evaluator: 1000,
     }),
+  cdpEndpoint: z.string().optional(),
   headless: z.boolean().default(true),
   viewports: z.array(ViewportSchema).default([
     { name: "desktop", width: 1280, height: 1000 },

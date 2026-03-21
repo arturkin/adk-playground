@@ -1,14 +1,20 @@
 import { Command } from "commander";
 import { config } from "./config/index.js";
-import { createRunner } from "./agents/index.js";
+import { createRunner, buildPlannerAgent } from "./agents/index.js";
 import { getBrowserManager } from "./browser/index.js";
 import { discoverTests } from "./tests/discovery.js";
 import { runTestSuite } from "./tests/runner.js";
 import { parseTestCase } from "./tests/parser.js";
-import { getFunctionCalls, stringifyContent } from "@google/adk";
+import {
+  getFunctionCalls,
+  stringifyContent,
+  InMemoryRunner,
+  LoopAgent,
+} from "@google/adk";
 import { runStore, detectRegressions, lessonStore } from "./memory/index.js";
 import { formatMarkdownReport, reportWriter } from "./reports/index.js";
 import type { TestRunResult, RegressionReport } from "./types/report.js";
+import { setOutputDir } from "./tools/planning.js";
 
 // --- Helpers ---
 
@@ -118,6 +124,7 @@ program
   .description("Run a manual QA task")
   .argument("<task>", "Description of the QA task to perform")
   .option("--url <url>", "Initial URL to start from")
+  .option("--cdp <endpoint>", "Connect to existing browser via CDP endpoint")
   .action(async (task, options) => {
     requireApiKey();
 
@@ -128,7 +135,11 @@ program
     const browser = getBrowserManager();
 
     try {
-      await browser.launch(config.headless);
+      if (options.cdp) {
+        await browser.connectCDP(options.cdp);
+      } else {
+        await browser.launch(config.headless);
+      }
 
       const session = await runner.sessionService.createSession({
         appName: "adk-qa",
@@ -205,8 +216,13 @@ program
     "Automatically apply test definition corrections",
     false,
   )
+  .option("--cdp <endpoint>", "Connect to existing browser via CDP endpoint")
   .action(async (options) => {
     requireApiKey();
+
+    if (options.cdp) {
+      config.cdpEndpoint = options.cdp;
+    }
 
     const suite = await resolveTestSuite(options);
 
@@ -255,6 +271,81 @@ program
       await getBrowserManager().close();
     }
     process.exit(exitCode);
+  });
+
+program
+  .command("generate")
+  .description("Explore a URL and generate test cases")
+  .argument("<url>", "URL to explore and generate tests for")
+  .option(
+    "--output-dir <dir>",
+    "Output directory for generated tests",
+    "./tests",
+  )
+  .option("--max-tests <n>", "Maximum test cases to generate", "5")
+  .action(async (url, options) => {
+    requireApiKey();
+
+    const maxTests = parseInt(options.maxTests, 10);
+    console.log(`Generating up to ${maxTests} test(s) for: ${url}`);
+    console.log(`Output directory: ${options.outputDir}`);
+
+    setOutputDir(options.outputDir);
+    const planner = buildPlannerAgent(config, maxTests);
+    const plannerLoop = new LoopAgent({
+      name: "planner_loop",
+      subAgents: [planner],
+      maxIterations: config.maxNavigationIterations * 2,
+    });
+    const runner = new InMemoryRunner({
+      agent: plannerLoop,
+      appName: "adk-qa",
+    });
+    const browser = getBrowserManager();
+
+    try {
+      await browser.launch(config.headless);
+
+      const session = await runner.sessionService.createSession({
+        appName: "adk-qa",
+        userId: "cli",
+        state: {
+          url_hint: url,
+        },
+      });
+
+      for await (const event of runner.runAsync({
+        userId: "cli",
+        sessionId: session.id,
+        newMessage: {
+          role: "user",
+          parts: [{ text: `Explore ${url} and generate test cases.` }],
+        },
+      })) {
+        if (event.author && event.author !== "user") {
+          const text = stringifyContent(event);
+          if (text) {
+            console.log(
+              `\x1b[36m[${event.author}]\x1b[0m ${text.substring(0, 200)}${text.length > 200 ? "..." : ""}`,
+            );
+          }
+          const functionCalls = getFunctionCalls(event);
+          for (const call of functionCalls) {
+            console.log(
+              `  \x1b[33m[Tool: ${call.name}]\x1b[0m ${JSON.stringify(call.args).substring(0, 100)}`,
+            );
+          }
+        }
+      }
+
+      console.log(
+        `\n\x1b[32mTest generation complete. Check ${options.outputDir} for generated test files.\x1b[0m`,
+      );
+    } catch (error) {
+      console.error("Generation failed:", error);
+    } finally {
+      await browser.close();
+    }
   });
 
 program.parse();
