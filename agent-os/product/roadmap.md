@@ -2,7 +2,7 @@
 
 ## Phase 1: MVP ✅ COMPLETE
 
-- ✅ **Manual QA mode** — Given a page URL and a task description, navigate the page, find interactive elements via visual indicators, and validate that the task/bug has been addressed
+- ✅ **Manual QA mode** — Given a page URL and a task description, navigate the page, find interactive elements via accessibility tree, and validate that the task/bug has been addressed
 - ✅ **Automated QA mode** — Read test definitions from markdown files, run Chrome headless, and execute all described test steps with validation
 - ✅ **Run memory** — Compare current test runs against previous runs to detect new bugs and regressions, particularly valuable for automated pipelines
 - ✅ **Bug reporting** — Surface found bugs, inconsistencies, and validation failures in clear reports

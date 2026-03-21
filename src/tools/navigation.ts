@@ -10,10 +10,9 @@ const paramsSchema = z.object({
 export const navigateTool = new FunctionTool({
   name: "navigate",
   description:
-    "Navigates the browser to a specific URL and captures a screenshot.",
-  // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
-  parameters: paramsSchema as any,
-  execute: async ({ url }: any, toolContext) => {
+    "Navigates the browser to a specific URL and captures page state.",
+  parameters: paramsSchema as never,
+  execute: async ({ url }: { url: string }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
       await navigateTo(url);
@@ -27,7 +26,7 @@ export const navigateTool = new FunctionTool({
     } catch (e) {
       return {
         status: "error",
-        message: `Failed to navigate to ${url}: ${(e as Error).message}`,
+        message: `Failed to navigate to ${url}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       };
     }
   },
@@ -43,9 +42,8 @@ export const scrollTool = new FunctionTool({
   name: "scroll",
   description:
     "Scrolls the page in a direction. Only use this if the element you need is NOT in the current element list.",
-  // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
-  parameters: scrollParamsSchema as any,
-  execute: async ({ direction }: any, toolContext) => {
+  parameters: scrollParamsSchema as never,
+  execute: async ({ direction }: { direction: "up" | "down" | "top" | "bottom" }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
       await scrollPage(direction);
@@ -58,7 +56,7 @@ export const scrollTool = new FunctionTool({
     } catch (e) {
       return {
         status: "error",
-        message: `Failed to scroll ${direction}: ${(e as Error).message}`,
+        message: `Failed to scroll ${direction}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       };
     }
   },

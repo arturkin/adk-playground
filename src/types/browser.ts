@@ -4,19 +4,16 @@ export interface ViewportConfig {
   height: number;
 }
 
-export interface ElementMetadata {
-  id: number;
-  tagName: string;
-  text: string;
-  role?: string;
-}
-
-export interface TextNodeMetadata {
-  id: string;       // "T1", "T2", etc. — distinct namespace from interactive IDs
-  tagName: string;  // "h1", "label", "p", "span", etc.
-  text: string;     // Truncated to 120 chars
-  role?: string;    // aria role if present
-  forElement?: string; // For label[for], the "for" attribute value
+export interface AccessibilityElement {
+  ref: string;          // e.g. "e6" from _snapshotForAI
+  role: string;         // "button", "link", "textbox", etc.
+  name: string;         // Accessible name
+  value?: string;       // Current value (for inputs)
+  description?: string;
+  level?: number;       // Heading level
+  checked?: boolean | "mixed";
+  disabled?: boolean;
+  url?: string;         // For links
 }
 
 export interface BrowserConfig {

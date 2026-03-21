@@ -1,5 +1,16 @@
-import { Page, Frame } from "puppeteer";
+import { Page, Frame } from "playwright";
 import { BrowserManager } from "./manager.js";
+
+function isRecoverableError(msg: string): boolean {
+  return (
+    msg.includes("Target page, context or browser has been closed") ||
+    msg.includes("frame was detached") ||
+    msg.includes("Execution context was destroyed") ||
+    msg.includes("navigation interrupted") ||
+    msg.includes("Target closed") ||
+    msg.includes("Protocol error")
+  );
+}
 
 /**
  * Executes an evaluate function with retries if it fails due to navigation or frame detachment.
@@ -7,8 +18,8 @@ import { BrowserManager } from "./manager.js";
  */
 export async function robustEvaluate<T>(
   pageOrFrame: Page | Frame,
-  fn: (...args: any[]) => T | Promise<T>,
-  ...args: any[]
+  fn: (...fnArgs: unknown[]) => T | Promise<T>,
+  ...args: unknown[]
 ): Promise<T> {
   let retries = 5;
   let delay = 2000;
@@ -18,16 +29,10 @@ export async function robustEvaluate<T>(
     try {
       return await currentTarget.evaluate(fn, ...args);
     } catch (e) {
-      const msg = (e as Error).message;
-      const isDetached =
-        msg.includes("detached Frame") ||
-        msg.includes("Execution context was destroyed") ||
-        msg.includes("Target closed") ||
-        msg.includes("Protocol error") ||
-        msg.includes("context was destroyed") ||
-        msg.includes("ReferenceError: aiElementMap is not defined");
+      const error = e instanceof Error ? e : new Error(String(e));
+      const msg = error.message;
 
-      if (isDetached) {
+      if (isRecoverableError(msg)) {
         retries--;
         if (retries === 0) throw e;
 
@@ -47,11 +52,16 @@ export async function robustEvaluate<T>(
           );
           // Wait for the page to be ready
           await freshPage
-            .waitForSelector("body", { timeout: 5000 })
+            .locator("body")
+            .waitFor({ timeout: 5000 })
             .catch(() => {});
         } catch (refreshErr) {
+          const refreshError =
+            refreshErr instanceof Error
+              ? refreshErr
+              : new Error(String(refreshErr));
           console.warn(
-            `    \x1b[33m[robustEvaluate]\x1b[0m Could not refresh page: ${(refreshErr as Error).message}`,
+            `    \x1b[33m[robustEvaluate]\x1b[0m Could not refresh page: ${refreshError.message}`,
           );
         }
       } else {
@@ -77,18 +87,13 @@ export async function robustScreenshot(
       const buffer = await currentPage.screenshot({
         type: "jpeg",
         quality: quality,
-        encoding: "base64",
       });
-      return buffer as string;
+      return buffer.toString("base64");
     } catch (e) {
-      const msg = (e as Error).message;
-      const isRecoverable =
-        msg.includes("Target closed") ||
-        msg.includes("detached Frame") ||
-        msg.includes("context was destroyed") ||
-        msg.includes("Protocol error");
+      const error = e instanceof Error ? e : new Error(String(e));
+      const msg = error.message;
 
-      if (isRecoverable) {
+      if (isRecoverableError(msg)) {
         retries--;
         if (retries === 0) throw e;
         console.warn(
@@ -99,7 +104,9 @@ export async function robustScreenshot(
         // Try to get a fresh page reference
         try {
           currentPage = await BrowserManager.getInstance().getActivePage();
-        } catch {}
+        } catch {
+          // ignore refresh failures, will retry with current page
+        }
       } else {
         throw e;
       }

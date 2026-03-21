@@ -1,16 +1,16 @@
 import { getBrowserManager } from "./manager.js";
 import * as actions from "./page-actions.js";
-import * as tagger from "./visual-tagger.js";
+import * as accessibility from "./accessibility.js";
 
 // Re-export core modules
 export * from "./manager.js";
 export * from "./page-actions.js";
-export * from "./visual-tagger.js";
+export * from "./accessibility.js";
 
 /**
- * BACKWARD COMPATIBILITY LAYER
- * These functions wrap the new class-based BrowserManager and pure functions
- * to ensure existing code doesn't break during migration.
+ * CONVENIENCE LAYER
+ * These functions wrap the BrowserManager and pure functions
+ * so callers don't need to manage the Page reference themselves.
  */
 
 export async function launchBrowser() {
@@ -39,34 +39,19 @@ export async function clickAt(x: number, y: number) {
   return await actions.clickAt(page, x, y);
 }
 
-export async function hoverElement(id: number) {
+export async function hoverElement(ref: string) {
   const page = await getBrowserManager().getActivePage();
-  return await actions.hoverElement(page, id);
+  return await actions.hoverElement(page, ref);
 }
 
-export async function tagElements(renderIndex: number = 0) {
+export async function clickElement(ref: string) {
   const page = await getBrowserManager().getActivePage();
-  return await tagger.tagElements(page, renderIndex);
+  return await actions.clickElement(page, ref);
 }
 
-export async function tagTextNodes(renderIndex: number = 0) {
+export async function typeElement(ref: string, text: string) {
   const page = await getBrowserManager().getActivePage();
-  return await tagger.tagTextNodes(page, renderIndex);
-}
-
-export async function clearMarkers() {
-  const page = await getBrowserManager().getActivePage();
-  return await tagger.clearMarkers(page);
-}
-
-export async function clickElement(id: number) {
-  const page = await getBrowserManager().getActivePage();
-  return await actions.clickElement(page, id);
-}
-
-export async function typeElement(id: number, text: string) {
-  const page = await getBrowserManager().getActivePage();
-  return await actions.typeElement(page, id, text);
+  return await actions.typeElement(page, ref, text);
 }
 
 export async function getScreenshot() {
@@ -82,4 +67,19 @@ export async function typeText(text: string) {
 export async function pressKey(key: string) {
   const page = await getBrowserManager().getActivePage();
   return await actions.pressKey(page, key);
+}
+
+export async function captureAccessibilitySnapshot() {
+  const page = await getBrowserManager().getActivePage();
+  return await accessibility.captureAccessibilitySnapshot(page);
+}
+
+export async function resolveRef(ref: string) {
+  const page = await getBrowserManager().getActivePage();
+  return accessibility.resolveRef(page, ref);
+}
+
+export async function forceSingleTab() {
+  const page = await getBrowserManager().getActivePage();
+  return await accessibility.forceSingleTab(page);
 }

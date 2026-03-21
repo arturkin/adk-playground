@@ -10,14 +10,14 @@ QA engineers, developers, and engineering teams who need reliable web applicatio
 
 ## Solution
 
-An AI-powered QA agent that uses injected visual indicators to detect and interact with page elements — no selectors required. The tool is self-correcting: when an interaction fails, the AI adapts and retries rather than breaking the entire test run. It operates in two modes:
+An AI-powered QA agent that uses Playwright's accessibility tree to detect and interact with page elements — no selectors required. The tool is self-correcting: when an interaction fails, the AI adapts and retries rather than breaking the entire test run. It operates in two modes:
 
 - **Manual QA mode**: Point it at a page with a task, and it validates the work — bug fixes, acceptance criteria, translations, SEO, and more.
 - **Automated QA mode**: Runs headless in CI (GitHub Actions), executing test suites defined in markdown files.
 
 Key differentiators:
 
-- **No selectors** — visual element detection eliminates the primary source of test flakiness
+- **No selectors** — accessibility-tree-based element detection eliminates the primary source of test flakiness
 - **3-level self-correction** — learns from failures within runs, across runs, and suggests test improvements
   - Level 1: Within-run retry strategies with alternative approaches
   - Level 2: Cross-run learning that injects failure insights into future tests

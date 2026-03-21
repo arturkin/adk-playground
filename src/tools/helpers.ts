@@ -1,16 +1,15 @@
 import { type Context } from "@google/adk";
 import {
-  tagElements,
-  tagTextNodes,
+  captureAccessibilitySnapshot,
+  forceSingleTab,
   getScreenshot,
-  clearMarkers,
   getBrowserManager,
 } from "../browser/index.js";
 
 /**
  * Helper to capture state after a browser action.
- * Cycles through 3 positioning modes (top-left, top-right, bottom-left) to avoid label occlusion.
- * It takes a screenshot and extracts interactive elements, saving them to session state.
+ * Captures an accessibility snapshot (for the navigator LLM) and a clean
+ * screenshot (for the validator LLM), saving them to session state.
  *
  * @param toolContext - The ADK tool context to access and update state.
  * @returns The number of interactive elements found.
@@ -24,18 +23,17 @@ export async function captureBrowserState(
   const stepCount = Number(toolContext.state.get("step_count") || 0);
 
   try {
-    // Clear all stale markers from previous capture cycle
-    await clearMarkers();
+    // Ensure single-tab behavior
+    await forceSingleTab();
 
-    // Tag text nodes (blue, offset posMode) then interactive elements (red)
-    // in a single pass — they use different CSS classes so they coexist.
-    const textNodes = await tagTextNodes(stepCount);
-    const elements = await tagElements(stepCount);
+    // Capture accessibility snapshot (for navigator)
+    const { elements, tree } = await captureAccessibilitySnapshot();
 
-    // Single screenshot with both blue + red markers visible
+    // Capture clean screenshot (for validator use later)
     const screenshot = await getScreenshot();
+
     console.log(
-      `    \x1b[34m[capture]\x1b[0m Text: ${textNodes.length} | Elements: ${elements.length}`,
+      `    \x1b[34m[capture]\x1b[0m Accessibility elements: ${elements.length}`,
     );
 
     // Log current URL and element summary for debugging
@@ -44,31 +42,28 @@ export async function captureBrowserState(
       console.log(
         `    \x1b[34m[capture]\x1b[0m URL: ${page.url()} | Elements: ${elements.length} | Step: ${stepCount}`,
       );
-      // Log a summary of element types
-      const tagCounts: Record<string, number> = {};
+      // Log a summary of element roles
+      const roleCounts: Record<string, number> = {};
       for (const el of elements) {
-        tagCounts[el.tagName] = (tagCounts[el.tagName] || 0) + 1;
+        roleCounts[el.role] = (roleCounts[el.role] || 0) + 1;
       }
       console.log(
-        `    \x1b[34m[capture]\x1b[0m Element breakdown: ${JSON.stringify(tagCounts)}`,
+        `    \x1b[34m[capture]\x1b[0m Role breakdown: ${JSON.stringify(roleCounts)}`,
       );
     } catch {
       /* ignore logging errors */
     }
 
-    toolContext.state.set("latest_screenshot", screenshot);
+    toolContext.state.set("latest_accessibility_tree", tree);
     toolContext.state.set("latest_elements", JSON.stringify(elements));
-    toolContext.state.set("latest_text_nodes", JSON.stringify(textNodes));
+    toolContext.state.set("latest_screenshot", screenshot);
     toolContext.state.set("step_count", String(stepCount + 1));
 
     return elements.length;
   } catch (e) {
     console.warn(
-      `    \x1b[31m[capture failed]\x1b[0m ${(e as Error).message}. Returning 0 elements to allow loop to continue.`,
+      `    \x1b[31m[capture failed]\x1b[0m ${(e instanceof Error ? e : new Error(String(e))).message}. Returning 0 elements to allow loop to continue.`,
     );
-    // If capture failed, we don't update latest_screenshot/elements,
-    // which might lead to a loop, but at least we don't crash the tool.
-    // Ideally we should at least clear them or set a "loading" state.
     return 0;
   }
 }

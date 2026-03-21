@@ -102,9 +102,12 @@ export const validatorAssertionReminderCallback = async ({
 };
 
 /**
- * Injects the latest screenshot and element list into the model request.
+ * Injects the latest accessibility tree and element metadata into the model request.
  * Used only by the navigator agent — other agents call take_screenshot themselves
  * so they are forced into tool-calling mode before writing any free-form text.
+ *
+ * The navigator receives text-only context (accessibility tree + elements JSON)
+ * instead of screenshots, dramatically reducing token cost.
  */
 export const injectScreenshotCallback = async ({
   context,
@@ -113,40 +116,25 @@ export const injectScreenshotCallback = async ({
   context: Context;
   request: LlmRequest;
 }): Promise<LlmResponse | undefined> => {
-  const screenshot = context.state.get("latest_screenshot");
+  const accessibilityTree = context.state.get("latest_accessibility_tree");
   const elements = context.state.get("latest_elements");
-  const textNodes = context.state.get("latest_text_nodes");
 
-  if (screenshot) {
-    // In ADK, we can append to the last message or add a new part
+  if (accessibilityTree) {
     const lastMessage = request.contents[request.contents.length - 1];
 
     if (!lastMessage.parts) {
       lastMessage.parts = [];
     }
 
-    // Single combined screenshot with both red (interactive) and blue (text) markers
+    // Inject the accessibility tree as the primary context
     lastMessage.parts.push({
-      text: "\n\nPage screenshot with interactive elements (red labels, numeric IDs) and text elements (blue labels, T-prefixed IDs):",
-    });
-    lastMessage.parts.push({
-      inlineData: {
-        mimeType: "image/jpeg",
-        data: screenshot as string,
-      },
+      text: `\n\nCurrent page accessibility tree (use refs like e1, e2 to interact with elements):\n\`\`\`\n${accessibilityTree}\n\`\`\``,
     });
 
-    // Add elements metadata as a text part to help the LLM map visual IDs to roles/text
+    // Add structured element metadata for easier lookup
     if (elements) {
       lastMessage.parts.push({
-        text: `\n\nInteractive elements on screen:\n${elements}`,
-      });
-    }
-
-    // Add text node metadata so the agent can read contextual labels and headings
-    if (textNodes) {
-      lastMessage.parts.push({
-        text: `\n\nText elements on screen (read-only, not clickable):\n${textNodes}`,
+        text: `\n\nAccessible elements metadata (JSON):\n${elements}`,
       });
     }
   }

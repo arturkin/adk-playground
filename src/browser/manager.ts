@@ -1,9 +1,12 @@
-import puppeteer, { Browser, Page } from "puppeteer";
+import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { ViewportConfig } from "../types/browser.js";
+
+export type { Browser, BrowserContext, Page } from "playwright";
 
 export class BrowserManager {
   private static instance: BrowserManager;
   private browser: Browser | null = null;
+  private context: BrowserContext | null = null;
   private page: Page | null = null;
   private viewport: ViewportConfig;
 
@@ -30,7 +33,7 @@ export class BrowserManager {
     if (this.browser && this.browser.isConnected()) {
       // Ensure page matches current viewport if it was changed
       if (this.page) {
-        await this.page.setViewport({
+        await this.page.setViewportSize({
           width: this.viewport.width,
           height: this.viewport.height,
         });
@@ -41,29 +44,38 @@ export class BrowserManager {
     // Clean up disconnected browser
     if (this.browser && !this.browser.isConnected()) {
       this.browser = null;
+      this.context = null;
       this.page = null;
     }
 
-    this.browser = await puppeteer.launch({
+    this.browser = await chromium.launch({
       headless: headless,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
-        `--window-size=${this.viewport.width},${this.viewport.height}`,
       ],
-      defaultViewport: {
+    });
+
+    this.context = await this.browser.newContext({
+      viewport: {
         width: this.viewport.width,
         height: this.viewport.height,
       },
+      userAgent: "Travelshift/QA",
     });
 
-    // Reuse the blank tab Chrome opens on launch instead of creating a second one
-    const existingPages = await this.browser.pages();
-    this.page = existingPages[0] ?? await this.browser.newPage();
-    await this.page.setViewport({
-      width: this.viewport.width,
-      height: this.viewport.height,
+    // Single-tab enforcement: when a new page opens, close the old one and track the new one
+    this.context.on("page", (newPage: Page) => {
+      const oldPage = this.page;
+      this.page = newPage;
+      if (oldPage && oldPage !== newPage) {
+        oldPage.close().catch(() => {
+          // Ignore errors when closing the old page
+        });
+      }
     });
+
+    this.page = await this.context.newPage();
     return { browser: this.browser, page: this.page };
   }
 
@@ -78,7 +90,13 @@ export class BrowserManager {
       );
     }
 
-    const pages = await this.browser.pages();
+    if (!this.context) {
+      throw new Error(
+        "Browser context not initialized. Call launch() first.",
+      );
+    }
+
+    const pages = this.context.pages();
     if (pages.length > 0) {
       // Use the last page (most recently opened tab)
       this.page = pages[pages.length - 1];
@@ -86,11 +104,7 @@ export class BrowserManager {
     }
 
     // No pages at all — create a new one
-    this.page = await this.browser.newPage();
-    await this.page.setViewport({
-      width: this.viewport.width,
-      height: this.viewport.height,
-    });
+    this.page = await this.context.newPage();
     return this.page;
   }
 
@@ -102,6 +116,7 @@ export class BrowserManager {
         console.error("Error closing browser:", e);
       }
       this.browser = null;
+      this.context = null;
       this.page = null;
     }
   }
@@ -118,6 +133,13 @@ export class BrowserManager {
       throw new Error("Browser not initialized. Call launch() first.");
     }
     return this.browser;
+  }
+
+  public getContext(): BrowserContext {
+    if (!this.context) {
+      throw new Error("Browser not initialized. Call launch() first.");
+    }
+    return this.context;
   }
 }
 

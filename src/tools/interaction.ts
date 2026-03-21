@@ -8,41 +8,46 @@ import {
   getBrowserManager,
 } from "../browser/index.js";
 import { captureBrowserState } from "./helpers.js";
+import type { AccessibilityElement } from "../types/browser.js";
 
 /**
- * Looks up the element metadata from latest_elements state by ID.
+ * Looks up the element metadata from latest_elements state by ref.
  */
-function getElementMeta(toolContext: Context, id: number): any {
+function getElementMeta(
+  toolContext: Context,
+  ref: string,
+): AccessibilityElement | null {
   try {
-    const elements = JSON.parse(
+    const elements: AccessibilityElement[] = JSON.parse(
       (toolContext.state.get("latest_elements") as string) || "[]",
     );
-    return elements.find((el: any) => el.id === id) || null;
+    return elements.find((el) => el.ref === ref) || null;
   } catch {
     return null;
   }
 }
 
 const clickParamsSchema = z.object({
-  id: z.number().describe("The visual ID of the element to click"),
+  ref: z
+    .string()
+    .describe("The accessibility ref of the element to click, e.g. 'e5'"),
 });
 
 export const clickElementTool = new FunctionTool({
   name: "click_element",
   description:
-    "Clicks on an element using its visual ID and captures a screenshot.",
-  // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
-  parameters: clickParamsSchema as any,
-  execute: async ({ id }: any, toolContext) => {
+    "Clicks on an element using its accessibility ref and captures page state.",
+  parameters: clickParamsSchema as never,
+  execute: async ({ ref }: { ref: string }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
-      const elMeta = getElementMeta(toolContext, id);
-      await clickElement(id);
+      const elMeta = getElementMeta(toolContext, ref);
+      await clickElement(ref);
       const elementCount = await captureBrowserState(toolContext);
       const page = await getBrowserManager().getActivePage();
       return {
         status: "success",
-        message: `Clicked element #${id}`,
+        message: `Clicked element ${ref}`,
         clickedElement: elMeta,
         currentUrl: page.url(),
         elementCount,
@@ -50,7 +55,7 @@ export const clickElementTool = new FunctionTool({
     } catch (e) {
       return {
         status: "error",
-        message: `Failed to click element #${id}: ${(e as Error).message}`,
+        message: `Failed to click element ${ref}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       };
     }
   },
@@ -59,52 +64,53 @@ export const clickElementTool = new FunctionTool({
 export const hoverElementTool = new FunctionTool({
   name: "hover_element",
   description:
-    "Hovers over an element using its visual ID and captures a screenshot.",
-  parameters: clickParamsSchema as any, // Reuse clickParamsSchema as it also just needs an 'id'
-  execute: async ({ id }: any, toolContext) => {
+    "Hovers over an element using its accessibility ref and captures page state.",
+  parameters: clickParamsSchema as never,
+  execute: async ({ ref }: { ref: string }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
-      await hoverElement(id);
+      await hoverElement(ref);
       const elementCount = await captureBrowserState(toolContext);
       return {
         status: "success",
-        message: `Hovered over element #${id}`,
+        message: `Hovered over element ${ref}`,
         elementCount,
       };
     } catch (e) {
       return {
         status: "error",
-        message: `Failed to hover over element #${id}: ${(e as Error).message}`,
+        message: `Failed to hover over element ${ref}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       };
     }
   },
 });
 
 const typeParamsSchema = z.object({
-  id: z.number().describe("The visual ID of the element to type into"),
+  ref: z
+    .string()
+    .describe("The accessibility ref of the element to type into, e.g. 'e7'"),
   text: z.string().describe("The text to type"),
 });
 
 export const typeElementTool = new FunctionTool({
   name: "type_element",
   description:
-    "Types text into an element using its visual ID and captures a screenshot.",
-  // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
-  parameters: typeParamsSchema as any,
-  execute: async ({ id, text }: any, toolContext) => {
+    "Types text into an element using its accessibility ref and captures page state.",
+  parameters: typeParamsSchema as never,
+  execute: async ({ ref, text }: { ref: string; text: string }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
-      await typeElement(id, text);
+      await typeElement(ref, text);
       const elementCount = await captureBrowserState(toolContext);
       return {
         status: "success",
-        message: `Typed into element #${id}`,
+        message: `Typed into element ${ref}`,
         elementCount,
       };
     } catch (e) {
       return {
         status: "error",
-        message: `Failed to type into element #${id}: ${(e as Error).message}`,
+        message: `Failed to type into element ${ref}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       };
     }
   },
@@ -116,10 +122,9 @@ const pressKeyParamsSchema = z.object({
 
 export const pressKeyTool = new FunctionTool({
   name: "press_key",
-  description: "Presses a keyboard key and captures a screenshot.",
-  // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
-  parameters: pressKeyParamsSchema as any,
-  execute: async ({ key }: any, toolContext) => {
+  description: "Presses a keyboard key and captures page state.",
+  parameters: pressKeyParamsSchema as never,
+  execute: async ({ key }: { key: string }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
       await pressKey(key);
@@ -132,7 +137,7 @@ export const pressKeyTool = new FunctionTool({
     } catch (e) {
       return {
         status: "error",
-        message: `Failed to press key ${key}: ${(e as Error).message}`,
+        message: `Failed to press key ${key}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       };
     }
   },
