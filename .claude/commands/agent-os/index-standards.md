@@ -72,14 +72,12 @@ folder-name:
 ```
 
 **Rules:**
-
 - Alphabetize folders
 - Alphabetize files within each folder
 - File names without `.md` extension
 - One-line descriptions only
 
 **Example:**
-
 ```yaml
 root:
   coding-style:

@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "testId": "tests/flight-search.md",
+    "runId": "run-1773856492111",
+    "timestamp": "2026-03-18T17:56:55.364Z",
+    "failureReason": "2 assertion(s) failed",
+    "failureCategory": "assertion_mismatch",
+    "analysis": "Test failed with status: failed. 2 of 5 assertions failed. Validation: The automated test for searching flights on \"Guide to Iceland\" has been executed.\n\n**Summary of findings:**\n1. **Search Execution:** Successfully navigated to the flight search page, set the origin to...",
+    "advice": "Review the specific failed assertions: \"Requested filters are applied, check filters panel to see if they are applied\", \"Fail the test if one of the requested filters was not applied\". Check if the expected state matches what's actually visible on the page.",
+    "failedStep": 9,
+    "consecutiveFailures": 1,
+    "resolved": false
+  }
+]
