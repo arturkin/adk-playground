@@ -1,11 +1,11 @@
 # ADK-QA: AI-Powered QA Automation Agent
 
-ADK-QA is a next-generation QA automation tool built on the Google Agent Development Kit (ADK). It uses a multi-agent architecture and visual element tagging (Set-of-Mark) to perform reliable, selector-free web testing.
+ADK-QA is a next-generation QA automation tool built on the Google Agent Development Kit (ADK). It uses a multi-agent architecture and Playwright's accessibility tree to perform reliable, selector-free web testing — no CSS or XPath selectors required.
 
 ## Features
 
-- **Multi-Agent Orchestration**: Sequential flow through Navigator, Validator, and Reporter agents.
-- **Selector-Free Interaction**: Uses visual indicators to detect and interact with elements, eliminating brittle CSS/XPath selectors.
+- **Multi-Agent Orchestration**: Sequential pipeline through Navigator, Validator, Evaluator, and Reporter agents.
+- **Selector-Free Interaction**: Uses Playwright's accessibility tree with `[ref]` identifiers to interact with elements — no brittle CSS/XPath selectors.
 - **3-Level Self-Correction Pipeline**:
   - **Level 1 (Within-Run)**: Enhanced retry strategies with alternative approaches when failures occur
   - **Level 2 (Cross-Run)**: Learns from past failures and injects insights into future test runs
@@ -19,9 +19,19 @@ ADK-QA is a next-generation QA automation tool built on the Google Agent Develop
 ## Architecture
 
 1.  **Orchestrator**: Deterministic agent that manages the overall flow.
-2.  **Navigator**: LoopAgent that interacts with the browser to complete test steps.
-3.  **Validator**: Assesses outcomes against expected criteria and records assertions.
-4.  **Reporter**: Compiles findings into a structured report and identifies bugs.
+2.  **Navigator**: LoopAgent that interacts with the browser via accessibility tree snapshots to complete test steps.
+3.  **Validator**: Assesses outcomes against expected criteria using clean screenshots and records assertions.
+4.  **Evaluator**: Post-validation LLM pass that reviews the validator's assertions and flags suspicious PASS verdicts (confidence-based override).
+5.  **Reporter**: Compiles findings into a structured report and identifies bugs.
+
+## Tech Stack
+
+- **Runtime**: TypeScript on Bun
+- **AI/LLM**: Google Gemini 3.x (flash, flash-lite, pro variants)
+- **Agent Framework**: Google Agent Development Kit (ADK)
+- **Browser Automation**: Playwright (Chromium) with accessibility tree interaction
+- **CLI**: Commander.js
+- **Validation**: Zod v4
 
 ## Setup
 
@@ -109,10 +119,10 @@ Configuration is managed via environment variables and validated with Zod. See `
 
 - `GOOGLE_GENAI_API_KEY`: Your Gemini API key.
 - `HEADLESS`: Set to `false` to see the browser in action.
-- `NAVIGATOR_MODEL`: LLM for navigation (default: gemini-2.5-flash, alias: `flash25`, `pro25`).
-- `VALIDATOR_MODEL`: LLM for validation (default: gemini-2.5-flash).
-- `REPORTER_MODEL`: LLM for reporting (default: gemini-2.5-flash).
-- `EVALUATOR_MODEL`: LLM for evaluation (default: gemini-2.5-flash).
+- `NAVIGATOR_MODEL`: LLM for navigation (default: gemini-3-flash, aliases: `flash`, `flash-lite`, `pro`, `thinking`).
+- `VALIDATOR_MODEL`: LLM for validation (default: gemini-3-flash).
+- `REPORTER_MODEL`: LLM for reporting (default: gemini-3-flash).
+- `EVALUATOR_MODEL`: LLM for evaluation (default: gemini-3-flash).
 - `TEST_DIR`: Directory for test discovery (default: ./tests).
 - `RUN_HISTORY_DIR`: Where to save run data (default: ./.qa-runs).
 - `LESSONS_DIR`: Where to save failure lessons (default: ./.qa-lessons).
@@ -126,7 +136,7 @@ ADK-QA includes a 3-level self-correction pipeline that learns from failures:
 
 When the navigator encounters errors during a test run, it applies intelligent retry strategies:
 
-- Element removed/changed → Take fresh screenshot to get updated element IDs
+- Element removed/changed → Take fresh accessibility snapshot to get updated element refs
 - Click intercepted → Dismiss overlays/popups first, then retry
 - Element not in list → Scroll to reveal it
 - Same approach failed 3+ times → Try alternative strategies (keyboard navigation, different elements)
