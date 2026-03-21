@@ -5,15 +5,15 @@ export interface ViewportConfig {
 }
 
 export interface AccessibilityElement {
-  ref: string;          // e.g. "e6" from _snapshotForAI
-  role: string;         // "button", "link", "textbox", etc.
-  name: string;         // Accessible name
-  value?: string;       // Current value (for inputs)
+  ref: string; // e.g. "e6" from _snapshotForAI
+  role: string; // "button", "link", "textbox", etc.
+  name: string; // Accessible name
+  value?: string; // Current value (for inputs)
   description?: string;
-  level?: number;       // Heading level
+  level?: number; // Heading level
   checked?: boolean | "mixed";
   disabled?: boolean;
-  url?: string;         // For links
+  url?: string; // For links
 }
 
 export interface BrowserConfig {

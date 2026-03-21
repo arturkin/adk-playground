@@ -2,7 +2,14 @@ import { createRunner } from "../agents/index.js";
 import { getBrowserManager } from "../browser/index.js";
 import { type AppConfig } from "../config/schema.js";
 import { TestCase, TestSuite } from "../types/test.js";
-import { TestRunResult, TestCaseResult, BugReport, EvaluationResult, StepAssertionResult } from "../types/report.js";
+import {
+  TestRunResult,
+  TestCaseResult,
+  BugReport,
+  EvaluationResult,
+  StepAssertionResult,
+  AssertionResult,
+} from "../types/report.js";
 import {
   runStore,
   lessonStore,
@@ -52,7 +59,11 @@ export async function runTestCase(
     await browser.launch(config.headless);
 
     // Build step assertions JSON for the tool to reference
-    const stepAssertionsForState: { stepIndex: number; id: number; description: string }[] = [];
+    const stepAssertionsForState: {
+      stepIndex: number;
+      id: number;
+      description: string;
+    }[] = [];
     let stepAssertionIdCounter = 1;
 
     const formattedSteps = testCase.steps
@@ -61,7 +72,11 @@ export async function runTestCase(
         const assertions =
           s.assertions && s.assertions.length > 0
             ? s.assertions
-            : [{ description: `Step ${s.index} completed successfully: ${s.instruction}` }];
+            : [
+                {
+                  description: `Step ${s.index} completed successfully: ${s.instruction}`,
+                },
+              ];
         line += `\n   Assertions for step ${s.index}:`;
         for (const a of assertions) {
           const id = stepAssertionIdCounter++;
@@ -154,7 +169,8 @@ export async function runTestCase(
     const assertions = JSON.parse(assertionsJson);
     const stepAssertionsJson =
       (sessionDetails?.state?.["step_assertions"] as string) || "[]";
-    const stepAssertions: StepAssertionResult[] = JSON.parse(stepAssertionsJson);
+    const stepAssertions: StepAssertionResult[] =
+      JSON.parse(stepAssertionsJson);
     const evaluationJson =
       (sessionDetails?.state?.["evaluation_result"] as string) || "";
     const evaluation = evaluationJson ? JSON.parse(evaluationJson) : null;
@@ -183,7 +199,7 @@ export async function runTestCase(
     const expectedAssertionCount = testCase.assertions.length;
     const allAssertionsPassed =
       hasAssertions &&
-      assertions.every((a: any) => {
+      assertions.every((a: AssertionResult) => {
         const original = testCase.assertions[a.id - 1];
         if (!original) return false;
         return (
@@ -192,7 +208,9 @@ export async function runTestCase(
             original.description.trim().toLowerCase()
         );
       });
-    const someExplicitlyFailed = hasAssertions && assertions.some((a: any) => a.passed === false);
+    const someExplicitlyFailed =
+      hasAssertions &&
+      assertions.some((a: AssertionResult) => a.passed === false);
     const assertionsMissing = assertions.length < expectedAssertionCount;
     // Only treat missing as failed when at least one was also explicitly failed,
     // or when none were recorded at all. Missing-but-all-passing = inconclusive.
@@ -216,18 +234,24 @@ export async function runTestCase(
       const reasons: string[] = [];
       if (validatorSaysFail) reasons.push("Validator said FAIL");
       if (anyAssertionFailed) {
-        const failedCount = assertions.filter((a: any) => !a.passed).length;
+        const failedCount = assertions.filter(
+          (a: AssertionResult) => !a.passed,
+        ).length;
         reasons.push(`${failedCount} assertion(s) explicitly failed`);
       }
       if (hasStepAssertionFailures) {
-        const failedStepCount = stepAssertions.filter((sa) => !sa.passed).length;
+        const failedStepCount = stepAssertions.filter(
+          (sa) => !sa.passed,
+        ).length;
         reasons.push(`${failedStepCount} step assertion(s) failed`);
       }
       statusReason = reasons.join(" + ");
     } else if (hasSeriousBugs) {
       status = "failed";
-      const serious = bugs.filter((b: BugReport) => ["critical", "high", "medium"].includes(b.severity));
-      statusReason = `${serious.length} serious bug(s): ${serious.map(b => b.severity).join(", ")}`;
+      const serious = bugs.filter((b: BugReport) =>
+        ["critical", "high", "medium"].includes(b.severity),
+      );
+      statusReason = `${serious.length} serious bug(s): ${serious.map((b) => b.severity).join(", ")}`;
     } else if (noAssertionsRecorded) {
       // Validator produced no output at all — we don't know the outcome
       status = "inconclusive";
@@ -264,14 +288,30 @@ export async function runTestCase(
         status = "inconclusive";
         statusReason = `Low evaluator confidence (${evaluation.confidence}/100): ${evaluation.reason}`;
       }
-      const evalColor = evaluation.override === "FAIL" ? "\x1b[31m" : evaluation.confidence >= 70 ? "\x1b[32m" : "\x1b[33m";
-      console.log(`  ${evalColor}[Evaluator] confidence=${evaluation.confidence}/100${evaluation.override ? ` → OVERRIDE ${evaluation.override}` : ""}\x1b[0m — ${evaluation.reason}`);
+      const evalColor =
+        evaluation.override === "FAIL"
+          ? "\x1b[31m"
+          : evaluation.confidence >= 70
+            ? "\x1b[32m"
+            : "\x1b[33m";
+      console.log(
+        `  ${evalColor}[Evaluator] confidence=${evaluation.confidence}/100${evaluation.override ? ` → OVERRIDE ${evaluation.override}` : ""}\x1b[0m — ${evaluation.reason}`,
+      );
     }
 
-    const statusColor = status === "passed" ? "\x1b[32m" : status === "failed" ? "\x1b[31m" : "\x1b[33m";
-    console.log(`  ${statusColor}[${status.toUpperCase()}]\x1b[0m ${statusReason}`);
+    const statusColor =
+      status === "passed"
+        ? "\x1b[32m"
+        : status === "failed"
+          ? "\x1b[31m"
+          : "\x1b[33m";
+    console.log(
+      `  ${statusColor}[${status.toUpperCase()}]\x1b[0m ${statusReason}`,
+    );
     if (noAssertionsRecorded) {
-      console.warn(`  \x1b[33m[Warning] No assertions recorded — check validator model output above\x1b[0m`);
+      console.warn(
+        `  \x1b[33m[Warning] No assertions recorded — check validator model output above\x1b[0m`,
+      );
     }
 
     const testResult: TestCaseResult = {
@@ -440,7 +480,7 @@ export async function runTestSuite(
   let gitCommit: string | undefined;
   try {
     gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
-  } catch (e) {
+  } catch {
     // Ignore if not a git repo
   }
 

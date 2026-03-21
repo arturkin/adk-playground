@@ -1,6 +1,6 @@
-import { FunctionTool, type Context } from "@google/adk";
+import { FunctionTool } from "@google/adk";
 import { z } from "zod";
-import { getBrowserManager, navigateTo, scrollPage } from "../browser/index.js";
+import { navigateTo, scrollPage } from "../browser/index.js";
 import { captureBrowserState } from "./helpers.js";
 
 const paramsSchema = z.object({
@@ -43,7 +43,10 @@ export const scrollTool = new FunctionTool({
   description:
     "Scrolls the page in a direction. Only use this if the element you need is NOT in the current element list.",
   parameters: scrollParamsSchema as never,
-  execute: async ({ direction }: { direction: "up" | "down" | "top" | "bottom" }, toolContext) => {
+  execute: async (
+    { direction }: { direction: "up" | "down" | "top" | "bottom" },
+    toolContext,
+  ) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
       await scrollPage(direction);

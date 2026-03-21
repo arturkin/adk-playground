@@ -1,7 +1,10 @@
 import { LlmAgent } from "@google/adk";
 import { type AppConfig } from "../config/schema.js";
 import { takeScreenshotTool, recordAssertionTool } from "../tools/index.js";
-import { validatorAssertionReminderCallback, emptyResponseNudgeCallback } from "./callbacks.js";
+import {
+  validatorAssertionReminderCallback,
+  emptyResponseNudgeCallback,
+} from "./callbacks.js";
 
 export function buildValidatorAgent(config: AppConfig) {
   return new LlmAgent({

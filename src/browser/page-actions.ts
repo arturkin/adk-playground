@@ -1,4 +1,4 @@
-import { Page } from "playwright";
+import type { Page } from "playwright";
 import { resolveRef } from "./accessibility.js";
 
 export async function navigateTo(page: Page, url: string) {
@@ -22,8 +22,7 @@ export async function scrollPage(
   await page.evaluate((dir) => {
     if (dir === "down") window.scrollBy(0, window.innerHeight);
     else if (dir === "up") window.scrollBy(0, -window.innerHeight);
-    else if (dir === "bottom")
-      window.scrollTo(0, document.body.scrollHeight);
+    else if (dir === "bottom") window.scrollTo(0, document.body.scrollHeight);
     else if (dir === "top") window.scrollTo(0, 0);
   }, direction);
 

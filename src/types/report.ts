@@ -29,6 +29,7 @@ export interface StepAssertionResult {
 }
 
 export interface AssertionResult {
+  id: number;
   description: string;
   passed: boolean;
   evidence?: string;

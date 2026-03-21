@@ -14,9 +14,9 @@ export function parseTestCase(filePath: string): TestCase {
   let viewport = "desktop";
   let tags: string[] = [];
   let priority: "low" | "medium" | "high" | "critical" = "medium";
-  let steps: TestStep[] = [];
+  const steps: TestStep[] = [];
   let expectedOutcome = "";
-  let assertions: TestAssertion[] = [];
+  const assertions: TestAssertion[] = [];
 
   let currentSection = "";
 
@@ -46,7 +46,7 @@ export function parseTestCase(filePath: string): TestCase {
       } else if (line.startsWith("- **priority**:")) {
         const p = line.replace("- **priority**:", "").trim().toLowerCase();
         if (["low", "medium", "high", "critical"].includes(p)) {
-          priority = p as any;
+          priority = p as "low" | "medium" | "high" | "critical";
         }
       }
     } else if (currentSection === "steps") {

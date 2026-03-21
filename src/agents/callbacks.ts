@@ -1,8 +1,4 @@
-import {
-  type Context,
-  type LlmRequest,
-  type LlmResponse,
-} from "@google/adk";
+import { type Context, type LlmRequest, type LlmResponse } from "@google/adk";
 
 /**
  * Detects empty model responses (Gemini 3 + tools known issue) and injects a
@@ -29,7 +25,10 @@ export const emptyResponseNudgeCallback = ({
       console.error(
         `  \x1b[31m[Model Error] ${response.errorCode}: ${response.errorMessage ?? "(no message)"}\x1b[0m`,
       );
-      if (response.errorCode === "NOT_FOUND" || response.errorMessage?.includes("not found")) {
+      if (
+        response.errorCode === "NOT_FOUND" ||
+        response.errorMessage?.includes("not found")
+      ) {
         console.error(
           `  \x1b[31m[Model Error] The model does not exist in the API. Check MODEL_ALIASES in src/config/models.ts.\x1b[0m`,
         );
@@ -78,18 +77,22 @@ export const validatorAssertionReminderCallback = async ({
     const recorded = recordedAssertions.length;
 
     if (recorded < expectedCount) {
-      const testAssertionsJson = context.state.get(
-        "_test_assertions_json",
-      ) as string | undefined;
+      const testAssertionsJson = context.state.get("_test_assertions_json") as
+        | string
+        | undefined;
       const allAssertions = testAssertionsJson
         ? JSON.parse(testAssertionsJson)
         : [];
-      const recordedIds = new Set(recordedAssertions.map((a: any) => a.id));
-      const missing = allAssertions.filter((a: any) => !recordedIds.has(a.id));
+      const recordedIds = new Set(
+        recordedAssertions.map((a: { id: number }) => a.id),
+      );
+      const missing = allAssertions.filter(
+        (a: { id: number }) => !recordedIds.has(a.id),
+      );
 
       const reminder =
         missing.length > 0
-          ? `\n\n[MANDATORY REMINDER] You have recorded ${recorded}/${expectedCount} assertions. You MUST still call record_assertion for: ${missing.map((a: any) => `ID ${a.id} ("${a.description}")`).join(", ")}. Do NOT write a final verdict until ALL ${expectedCount} are recorded.`
+          ? `\n\n[MANDATORY REMINDER] You have recorded ${recorded}/${expectedCount} assertions. You MUST still call record_assertion for: ${missing.map((a: { id: number; description: string }) => `ID ${a.id} ("${a.description}")`).join(", ")}. Do NOT write a final verdict until ALL ${expectedCount} are recorded.`
           : `\n\n[MANDATORY REMINDER] You must call record_assertion ${expectedCount} time(s) before writing a final verdict.`;
 
       const lastMessage = request.contents[request.contents.length - 1];

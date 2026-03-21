@@ -113,8 +113,8 @@ export class TestCorrectionManager {
     fs.copyFileSync(testFilePath, backupPath);
     console.log(`  \x1b[36m[Backup] Created ${backupPath}\x1b[0m`);
 
-    // Read test file
-    let content = fs.readFileSync(testFilePath, "utf-8");
+    // Read test file (reserved for future section-specific replacement)
+    fs.readFileSync(testFilePath, "utf-8");
 
     // Apply correction based on section
     // Note: This is a simplified implementation. Real implementation would need

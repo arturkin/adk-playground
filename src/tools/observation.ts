@@ -46,7 +46,7 @@ export const getElementListTool = new FunctionTool({
   description:
     "Returns the current list of accessible elements without taking a screenshot.",
   parameters: z.object({}) as never,
-  execute: async (_: Record<string, never>, toolContext) => {
+  execute: async (_: Record<string, never>, _toolContext) => {
     try {
       const { elements } = await captureAccessibilitySnapshot();
 

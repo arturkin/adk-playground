@@ -1,4 +1,4 @@
-import { Page, Frame } from "playwright";
+import type { Page, Frame } from "playwright";
 import { BrowserManager } from "./manager.js";
 
 function isRecoverableError(msg: string): boolean {

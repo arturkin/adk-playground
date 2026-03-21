@@ -200,7 +200,11 @@ program
     "--test <name>",
     "Run test(s) matching name (partial, case-insensitive)",
   )
-  .option("--auto-fix", "Automatically apply test definition corrections", false)
+  .option(
+    "--auto-fix",
+    "Automatically apply test definition corrections",
+    false,
+  )
   .action(async (options) => {
     requireApiKey();
 

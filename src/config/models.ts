@@ -12,5 +12,5 @@ export const MODEL_ALIASES = {
 } as const;
 
 export function getModelName(alias: string): string {
-  return (MODEL_ALIASES as any)[alias] || alias;
+  return MODEL_ALIASES[alias as keyof typeof MODEL_ALIASES] || alias;
 }

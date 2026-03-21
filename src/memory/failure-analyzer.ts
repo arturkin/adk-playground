@@ -120,7 +120,7 @@ function buildAdvice(
     case "popup_overlay":
       return 'Dismiss cookie consent banners, popups, or overlays FIRST before attempting to click other elements. Look for "Accept", "Allow", close buttons, or X icons.';
 
-    case "assertion_mismatch":
+    case "assertion_mismatch": {
       const failedAssertions = result.assertions.filter((a) => !a.passed);
       if (failedAssertions.length > 0) {
         const examples = failedAssertions
@@ -130,6 +130,7 @@ function buildAdvice(
         return `Review the specific failed assertions: ${examples}. Check if the expected state matches what's actually visible on the page.`;
       }
       return "Review all assertions carefully. Ensure the page is in the expected state before validation.";
+    }
 
     case "test_definition_issue":
       return "The test may have incomplete steps or missing assertions. Review the test definition for clarity and completeness.";
@@ -187,9 +188,10 @@ function buildFailureReason(
       return "Page elements not ready in time";
     case "popup_overlay":
       return "Popup or overlay blocked interaction";
-    case "assertion_mismatch":
+    case "assertion_mismatch": {
       const failedCount = result.assertions.filter((a) => !a.passed).length;
       return `${failedCount} assertion(s) failed`;
+    }
     case "test_definition_issue":
       return "Test definition incomplete or unclear";
     default:

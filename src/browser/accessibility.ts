@@ -1,5 +1,13 @@
-import { Page } from "playwright";
+import type { Page } from "playwright";
 import type { AccessibilityElement } from "../types/browser.js";
+
+/**
+ * Extend Playwright's Page with the private _snapshotForAI API.
+ * This is used by @playwright/mcp internally and is not part of the public API.
+ */
+interface PageWithSnapshot extends Page {
+  _snapshotForAI?: () => Promise<{ full: string }>;
+}
 
 /**
  * Extend the global Window interface for the single-tab enforcement patch.
@@ -28,19 +36,15 @@ export interface AccessibilitySnapshot {
  * This uses the same API that @playwright/mcp uses internally.
  */
 export async function captureAccessibilitySnapshot(
-  page: Page,
+  page: PageWithSnapshot,
 ): Promise<AccessibilitySnapshot> {
-  // _snapshotForAI is a private API — cast through unknown to access it
-  const pageWithSnapshot = page as unknown as {
-    _snapshotForAI?: () => Promise<{ full: string }>;
-  };
-  if (typeof pageWithSnapshot._snapshotForAI !== "function") {
+  if (typeof page._snapshotForAI !== "function") {
     throw new Error(
       "Playwright _snapshotForAI() not available. Ensure you are using a compatible Playwright version.",
     );
   }
 
-  const result = await pageWithSnapshot._snapshotForAI();
+  const result = await page._snapshotForAI();
   const tree = result.full;
   const elements = parseAccessibilityTree(tree);
 
@@ -65,7 +69,7 @@ function parseAccessibilityTree(tree: string): AccessibilityElement[] {
     const line = lines[i];
 
     // Match lines with refs: "- role "name" [ref=xxx] ..."
-    const refMatch = line.match(/\[ref=(e\d+)\]/);
+    const refMatch = line.match(/\[ref=(e\d+)]/);
     if (!refMatch) continue;
 
     const ref = refMatch[1];
@@ -87,7 +91,7 @@ function parseAccessibilityTree(tree: string): AccessibilityElement[] {
     if (valueMatch) element.value = valueMatch[1];
 
     // Extract level if present: [level=N]
-    const levelMatch = line.match(/\[level=(\d+)\]/);
+    const levelMatch = line.match(/\[level=(\d+)]/);
     if (levelMatch) element.level = parseInt(levelMatch[1], 10);
 
     // Extract checked state

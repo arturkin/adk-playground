@@ -97,7 +97,10 @@ export const typeElementTool = new FunctionTool({
   description:
     "Types text into an element using its accessibility ref and captures page state.",
   parameters: typeParamsSchema as never,
-  execute: async ({ ref, text }: { ref: string; text: string }, toolContext) => {
+  execute: async (
+    { ref, text }: { ref: string; text: string },
+    toolContext,
+  ) => {
     if (!toolContext) throw new Error("ToolContext is required");
     try {
       await typeElement(ref, text);

@@ -1,7 +1,10 @@
 import { LlmAgent, LoopAgent } from "@google/adk";
-import { type AppConfig } from "../config/schema.js";
+import type { AppConfig } from "../config/schema.js";
 import * as tools from "../tools/index.js";
-import { injectScreenshotCallback, emptyResponseNudgeCallback } from "./callbacks.js";
+import {
+  injectScreenshotCallback,
+  emptyResponseNudgeCallback,
+} from "./callbacks.js";
 
 export function buildNavigatorAgent(config: AppConfig) {
   const navigator = new LlmAgent({

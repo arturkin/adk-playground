@@ -1,5 +1,10 @@
-import { chromium, Browser, BrowserContext, Page } from "playwright";
-import { ViewportConfig } from "../types/browser.js";
+import {
+  chromium,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from "playwright";
+import type { ViewportConfig } from "../types/browser.js";
 
 export type { Browser, BrowserContext, Page } from "playwright";
 
@@ -50,10 +55,7 @@ export class BrowserManager {
 
     this.browser = await chromium.launch({
       headless: headless,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-      ],
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     this.context = await this.browser.newContext({
@@ -91,9 +93,7 @@ export class BrowserManager {
     }
 
     if (!this.context) {
-      throw new Error(
-        "Browser context not initialized. Call launch() first.",
-      );
+      throw new Error("Browser context not initialized. Call launch() first.");
     }
 
     const pages = this.context.pages();

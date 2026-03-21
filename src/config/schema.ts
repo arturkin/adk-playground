@@ -16,12 +16,19 @@ export const ConfigSchema = z.object({
   }),
   // Thinking token budgets per agent. 0 = disabled, -1 = auto, N = N tokens.
   // Only effective on models that support thinking (Gemini 2.5+, Gemini 3.x).
-  thinkingBudgets: z.object({
-    navigator: z.number().default(8000),  // High: complex multi-step navigation & planning
-    validator: z.number().default(2000),  // Medium: structured assertion evaluation
-    reporter: z.number().default(0),      // Off: simple text formatting & summarization
-    evaluator: z.number().default(1000),  // Low: text reasoning over assertion evidence
-  }).default({ navigator: 8000, validator: 2000, reporter: 0, evaluator: 1000 }),
+  thinkingBudgets: z
+    .object({
+      navigator: z.number().default(8000), // High: complex multi-step navigation & planning
+      validator: z.number().default(2000), // Medium: structured assertion evaluation
+      reporter: z.number().default(0), // Off: simple text formatting & summarization
+      evaluator: z.number().default(1000), // Low: text reasoning over assertion evidence
+    })
+    .default({
+      navigator: 8000,
+      validator: 2000,
+      reporter: 0,
+      evaluator: 1000,
+    }),
   headless: z.boolean().default(true),
   viewports: z.array(ViewportSchema).default([
     { name: "desktop", width: 1280, height: 1000 },

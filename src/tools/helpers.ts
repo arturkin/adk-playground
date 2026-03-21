@@ -1,4 +1,4 @@
-import { type Context } from "@google/adk";
+import type { Context } from "@google/adk";
 import {
   captureAccessibilitySnapshot,
   forceSingleTab,

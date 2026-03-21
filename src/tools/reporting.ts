@@ -99,15 +99,24 @@ const evaluationParamsSchema = z.object({
     .describe("Set to 'FAIL' to override a PASS verdict; null to accept"),
   reason: z
     .string()
-    .describe("One sentence explaining confidence score and override rationale"),
+    .describe(
+      "One sentence explaining confidence score and override rationale",
+    ),
 });
 
 export const recordEvaluationTool = new FunctionTool({
   name: "record_evaluation",
   description:
     "Records the evaluator's confidence score and optional verdict override.",
-  parameters: evaluationParamsSchema as any,
-  execute: async ({ confidence, override, reason }: any, toolContext) => {
+  parameters: evaluationParamsSchema as never,
+  execute: async (
+    {
+      confidence,
+      override,
+      reason,
+    }: { confidence: number; override: string | null; reason: string },
+    toolContext,
+  ) => {
     if (!toolContext) throw new Error("ToolContext is required");
     toolContext.state.set(
       "evaluation_result",
@@ -138,9 +147,18 @@ const bugParamsSchema = z.object({
 export const recordBugTool = new FunctionTool({
   name: "record_bug",
   description: "Records a bug finding during the QA process.",
-  // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
-  parameters: bugParamsSchema as any,
-  execute: async (bug: any, toolContext) => {
+  parameters: bugParamsSchema as never,
+  execute: async (
+    bug: {
+      severity: string;
+      category: string;
+      title: string;
+      description: string;
+      expected: string;
+      actual: string;
+    },
+    toolContext,
+  ) => {
     if (!toolContext) throw new Error("ToolContext is required");
     const bugs = JSON.parse(toolContext.state.get("bugs") || "[]");
     const bugReport = {
@@ -176,9 +194,11 @@ const assertionParamsSchema = z.object({
 export const recordAssertionTool = new FunctionTool({
   name: "record_assertion",
   description: "Records a pass/fail result for a specific assertion by its ID.",
-  // @google/adk FunctionTool typing requires 'as any' for the schema if using Zod
-  parameters: assertionParamsSchema as any,
-  execute: async (assertion: any, toolContext) => {
+  parameters: assertionParamsSchema as never,
+  execute: async (
+    assertion: { id: number; passed: boolean; evidence: string },
+    toolContext,
+  ) => {
     if (!toolContext) throw new Error("ToolContext is required");
 
     const assertions = JSON.parse(toolContext.state.get("assertions") || "[]");
@@ -186,7 +206,9 @@ export const recordAssertionTool = new FunctionTool({
       (toolContext.state.get("_test_assertions_json") as string) || "[]";
     const originalAssertions = JSON.parse(testAssertionsJson);
 
-    const original = originalAssertions.find((a: any) => a.id === assertion.id);
+    const original = originalAssertions.find(
+      (a: { id: number }) => a.id === assertion.id,
+    );
     if (!original) {
       return {
         status: "error",
@@ -208,15 +230,18 @@ export const recordAssertionTool = new FunctionTool({
     toolContext.state.set("assertions", JSON.stringify(assertions));
 
     // Check for remaining unrecorded assertions and remind the LLM
-    const recordedIds = new Set(assertions.map((a: any) => a.id));
+    const recordedIds = new Set(assertions.map((a: { id: number }) => a.id));
     const unrecordedAssertions = originalAssertions.filter(
-      (oa: any) => !recordedIds.has(oa.id),
+      (oa: { id: number }) => !recordedIds.has(oa.id),
     );
 
     let message = `Assertion ${assertion.id} recorded: ${original.description} (${record.passed ? "PASSED" : "FAILED"})`;
     if (unrecordedAssertions.length > 0) {
       message += `. REMAINING: You must still record ${unrecordedAssertions.length} more assertion(s): ${unrecordedAssertions
-        .map((a: any) => `ID ${a.id} ("${a.description}")`)
+        .map(
+          (a: { id: number; description: string }) =>
+            `ID ${a.id} ("${a.description}")`,
+        )
         .join(", ")}. Call record_assertion for each one now.`;
     } else {
       message += `. All assertions have been recorded.`;
@@ -230,9 +255,7 @@ export const recordAssertionTool = new FunctionTool({
 });
 
 const stepAssertionParamsSchema = z.object({
-  stepIndex: z
-    .number()
-    .describe("The step number this assertion belongs to"),
+  stepIndex: z.number().describe("The step number this assertion belongs to"),
   description: z
     .string()
     .describe("The assertion description (copy from the step assertions list)"),
@@ -246,8 +269,16 @@ export const recordStepAssertionTool = new FunctionTool({
   name: "record_step_assertion",
   description:
     "Records a pass/fail result for a per-step assertion. Call this after completing a step that has assertions listed below it.",
-  parameters: stepAssertionParamsSchema as any,
-  execute: async (params: any, toolContext) => {
+  parameters: stepAssertionParamsSchema as never,
+  execute: async (
+    params: {
+      stepIndex: number;
+      description: string;
+      passed: boolean;
+      evidence: string;
+    },
+    toolContext,
+  ) => {
     if (!toolContext) throw new Error("ToolContext is required");
 
     const stepAssertions = JSON.parse(

@@ -11,14 +11,22 @@ function loadConfig(): AppConfig {
       evaluator: getModelName(process.env.EVALUATOR_MODEL || "flash3"),
     },
     thinkingBudgets: {
-      navigator: process.env.NAVIGATOR_THINKING_BUDGET !== undefined
-        ? parseInt(process.env.NAVIGATOR_THINKING_BUDGET) : undefined,
-      validator: process.env.VALIDATOR_THINKING_BUDGET !== undefined
-        ? parseInt(process.env.VALIDATOR_THINKING_BUDGET) : undefined,
-      reporter: process.env.REPORTER_THINKING_BUDGET !== undefined
-        ? parseInt(process.env.REPORTER_THINKING_BUDGET) : undefined,
-      evaluator: process.env.EVALUATOR_THINKING_BUDGET !== undefined
-        ? parseInt(process.env.EVALUATOR_THINKING_BUDGET) : undefined,
+      navigator:
+        process.env.NAVIGATOR_THINKING_BUDGET !== undefined
+          ? parseInt(process.env.NAVIGATOR_THINKING_BUDGET)
+          : undefined,
+      validator:
+        process.env.VALIDATOR_THINKING_BUDGET !== undefined
+          ? parseInt(process.env.VALIDATOR_THINKING_BUDGET)
+          : undefined,
+      reporter:
+        process.env.REPORTER_THINKING_BUDGET !== undefined
+          ? parseInt(process.env.REPORTER_THINKING_BUDGET)
+          : undefined,
+      evaluator:
+        process.env.EVALUATOR_THINKING_BUDGET !== undefined
+          ? parseInt(process.env.EVALUATOR_THINKING_BUDGET)
+          : undefined,
     },
     headless: process.env.HEADLESS !== "false",
     maxNavigationIterations: process.env.MAX_ITERATIONS
