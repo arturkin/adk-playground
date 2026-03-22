@@ -1,47 +1,30 @@
 import { ConfigSchema, type AppConfig } from "./schema.js";
 import { getModelName } from "./models.js";
+import * as env from "../env.js";
 
 function loadConfig(): AppConfig {
   const config = {
-    apiKey: process.env.GOOGLE_GENAI_API_KEY || "",
+    apiKey: env.GOOGLE_GENAI_API_KEY,
     models: {
-      navigator: getModelName(process.env.NAVIGATOR_MODEL || "flash3"),
-      validator: getModelName(process.env.VALIDATOR_MODEL || "flash3"),
-      reporter: getModelName(process.env.REPORTER_MODEL || "flash3"),
-      evaluator: getModelName(process.env.EVALUATOR_MODEL || "flash3"),
+      navigator: getModelName(env.NAVIGATOR_MODEL),
+      validator: getModelName(env.VALIDATOR_MODEL),
+      reporter: getModelName(env.REPORTER_MODEL),
+      evaluator: getModelName(env.EVALUATOR_MODEL),
     },
     thinkingBudgets: {
-      navigator:
-        process.env.NAVIGATOR_THINKING_BUDGET !== undefined
-          ? parseInt(process.env.NAVIGATOR_THINKING_BUDGET)
-          : undefined,
-      validator:
-        process.env.VALIDATOR_THINKING_BUDGET !== undefined
-          ? parseInt(process.env.VALIDATOR_THINKING_BUDGET)
-          : undefined,
-      reporter:
-        process.env.REPORTER_THINKING_BUDGET !== undefined
-          ? parseInt(process.env.REPORTER_THINKING_BUDGET)
-          : undefined,
-      evaluator:
-        process.env.EVALUATOR_THINKING_BUDGET !== undefined
-          ? parseInt(process.env.EVALUATOR_THINKING_BUDGET)
-          : undefined,
+      navigator: env.NAVIGATOR_THINKING_BUDGET,
+      validator: env.VALIDATOR_THINKING_BUDGET,
+      reporter: env.REPORTER_THINKING_BUDGET,
+      evaluator: env.EVALUATOR_THINKING_BUDGET,
     },
-    headless: process.env.HEADLESS !== "false",
-    maxNavigationIterations: process.env.MAX_ITERATIONS
-      ? parseInt(process.env.MAX_ITERATIONS)
-      : undefined,
-    testDir: process.env.TEST_DIR,
-    knowledgeBaseDir: process.env.KNOWLEDGE_BASE_DIR,
-    reportDir: process.env.REPORT_DIR,
-    lessonsDir: process.env.LESSONS_DIR,
-    debug: process.env.DEBUG === "true",
+    headless: env.HEADLESS,
+    maxNavigationIterations: env.MAX_ITERATIONS,
+    debug: env.DEBUG,
   };
 
   // Remove undefined values to let Zod defaults kick in
   const cleanConfig = Object.fromEntries(
-    Object.entries(config).filter(([_, v]) => v !== undefined),
+    Object.entries(config).filter(([, v]) => v !== undefined),
   );
 
   const result = ConfigSchema.safeParse(cleanConfig);

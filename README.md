@@ -115,10 +115,8 @@ Configuration is managed via environment variables and validated with Zod. See `
 - `VALIDATOR_MODEL`: LLM for validation (default: gemini-3-flash).
 - `REPORTER_MODEL`: LLM for reporting (default: gemini-3-flash).
 - `EVALUATOR_MODEL`: LLM for evaluation (default: gemini-3-flash).
-- `TEST_DIR`: Directory for test discovery (default: ./tests).
-- `RUN_HISTORY_DIR`: Where to save run data (default: ./.qa-runs).
-- `LESSONS_DIR`: Where to save failure lessons (default: ./.qa-lessons).
-- `KNOWLEDGE_BASE_DIR`: Directory for domain-specific context (default: ./knowledge-base).
+
+All runtime artifacts (reports, run history, lessons) are written to `artifacts/` (gitignored). Directory paths and other constants are defined in `src/constants.ts`.
 
 ## Self-Correction System
 
@@ -135,7 +133,7 @@ When the navigator encounters errors during a test run, it applies intelligent r
 
 ### Level 2: Cross-Run Learning
 
-Failure lessons are stored in `.qa-lessons/lessons.json` and automatically injected into future test runs:
+Failure lessons are stored in `artifacts/lessons/lessons.json` and automatically injected into future test runs:
 
 - Each failure is analyzed and categorized (navigation_error, element_not_found, timing_issue, popup_overlay, assertion_mismatch, test_definition_issue)
 - Actionable advice is generated for each failure type
@@ -150,7 +148,7 @@ After 3+ consecutive failures of the same type, the system suggests corrections:
 - Test definition issues → Suggests clarifying test steps
 - Navigation errors → Suggests verifying the target URL
 
-Corrections are logged to console and saved to `.qa-lessons/corrections.json`. Use `--auto-fix` to automatically apply corrections (with `.bak` backups).
+Corrections are logged to console and saved to `artifacts/lessons/corrections.json`. Use `--auto-fix` to automatically apply corrections (with `.bak` backups).
 
 ### Viewing Self-Correction Data
 

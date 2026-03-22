@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { FailureLesson } from "../types/lessons.js";
-import { config } from "../config/index.js";
+import { LESSONS_DIR } from "../constants.js";
 
 /**
  * Handles persistence of failure lessons to the file system.
@@ -10,7 +10,7 @@ export class LessonStore {
   private lessonsDir: string;
   private lessonsFile: string;
 
-  constructor(lessonsDir: string = config.lessonsDir) {
+  constructor(lessonsDir: string = LESSONS_DIR) {
     this.lessonsDir = path.resolve(process.cwd(), lessonsDir);
     this.lessonsFile = path.join(this.lessonsDir, "lessons.json");
     this.ensureDir(this.lessonsDir);

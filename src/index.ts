@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { config } from "./config/index.js";
+import { TEST_DIR } from "./constants.js";
 import { createRunner, buildPlannerAgent } from "./agents/index.js";
 import { getBrowserManager } from "./browser/index.js";
 import { discoverTests } from "./tests/discovery.js";
@@ -205,7 +206,7 @@ program
 program
   .command("auto")
   .description("Run automated test suites")
-  .option("--test-dir <dir>", "Directory containing test files", config.testDir)
+  .option("--test-dir <dir>", "Directory containing test files", TEST_DIR)
   .option("--test-file <file>", "Specific test file to run (exact path)")
   .option(
     "--test <name>",

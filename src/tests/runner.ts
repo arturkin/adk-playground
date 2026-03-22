@@ -1,6 +1,7 @@
 import { createRunner } from "../agents/index.js";
 import { getBrowserManager } from "../browser/index.js";
 import { type AppConfig } from "../config/schema.js";
+import { KNOWLEDGE_BASE_DIR } from "../constants.js";
 import { TestCase, TestSuite } from "../types/test.js";
 import {
   TestRunResult,
@@ -47,7 +48,7 @@ export async function runTestCase(
     config.viewports[0];
   const browser = getBrowserManager(viewport);
 
-  const knowledgeBase = await loadKnowledgeBase(config.knowledgeBaseDir);
+  const knowledgeBase = await loadKnowledgeBase(KNOWLEDGE_BASE_DIR);
 
   // Load active failure lessons for this test
   const activeLessons = lessonStore.getActiveLessons(testCase.id);

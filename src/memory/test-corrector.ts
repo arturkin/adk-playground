@@ -2,9 +2,7 @@ import fs from "fs";
 import path from "path";
 import { TestCase } from "../types/test.js";
 import { FailureLesson, TestCorrection } from "../types/lessons.js";
-import { config } from "../config/index.js";
-
-const CORRECTION_THRESHOLD = 3; // Suggest corrections after 3+ consecutive failures
+import { LESSONS_DIR, CORRECTION_THRESHOLD } from "../constants.js";
 
 /**
  * Manages test definition corrections based on repeated failures.
@@ -12,7 +10,7 @@ const CORRECTION_THRESHOLD = 3; // Suggest corrections after 3+ consecutive fail
 export class TestCorrectionManager {
   private correctionsFile: string;
 
-  constructor(lessonsDir: string = config.lessonsDir) {
+  constructor(lessonsDir: string = LESSONS_DIR) {
     const dir = path.resolve(process.cwd(), lessonsDir);
     this.correctionsFile = path.join(dir, "corrections.json");
     this.ensureDir(dir);

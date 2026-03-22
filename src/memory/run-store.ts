@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { TestRunResult } from "../types/report.js";
-import { config } from "../config/index.js";
+import { RUN_HISTORY_DIR, MAX_RUNS_TO_KEEP } from "../constants.js";
 
 /**
  * Handles persistence of test run results to the file system.
@@ -9,7 +9,7 @@ import { config } from "../config/index.js";
 export class RunStore {
   private historyDir: string;
 
-  constructor(historyDir: string = config.runHistoryDir) {
+  constructor(historyDir: string = RUN_HISTORY_DIR) {
     this.historyDir = path.resolve(process.cwd(), historyDir);
     this.ensureDir(this.historyDir);
   }
@@ -28,7 +28,35 @@ export class RunStore {
     const latestPath = path.join(this.historyDir, "latest.json");
     fs.writeFileSync(latestPath, JSON.stringify(result, null, 2));
 
+    this.pruneOldRuns(MAX_RUNS_TO_KEEP);
+
     return filePath;
+  }
+
+  /**
+   * Removes old run files and their screenshots, keeping only the most recent N.
+   */
+  private pruneOldRuns(keepCount: number): void {
+    const files = fs
+      .readdirSync(this.historyDir)
+      .filter((f) => f.endsWith(".json") && f !== "latest.json")
+      .sort();
+
+    if (files.length <= keepCount) return;
+
+    const toRemove = files.slice(0, files.length - keepCount);
+    const screenshotsDir = path.join(this.historyDir, "screenshots");
+
+    for (const file of toRemove) {
+      fs.unlinkSync(path.join(this.historyDir, file));
+
+      // Remove associated screenshots
+      const runId = file.replace(/.*_(run-\d+)\.json$/, "$1");
+      const runScreenshotsDir = path.join(screenshotsDir, runId);
+      if (fs.existsSync(runScreenshotsDir)) {
+        fs.rmSync(runScreenshotsDir, { recursive: true });
+      }
+    }
   }
 
   /**

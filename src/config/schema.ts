@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  DEFAULT_ACTION_DELAY,
+  DEFAULT_SCREENSHOT_QUALITY,
+  DEFAULT_VIEWPORTS,
+  MAX_NAVIGATION_ITERATIONS,
+} from "../constants.js";
 
 export const ViewportSchema = z.object({
   name: z.string(),
@@ -31,20 +37,12 @@ export const ConfigSchema = z.object({
     }),
   cdpEndpoint: z.string().optional(),
   headless: z.boolean().default(true),
-  viewports: z.array(ViewportSchema).default([
-    { name: "desktop", width: 1280, height: 1000 },
-    { name: "mobile", width: 375, height: 812 }, // iPhone
-    { name: "mobile-pro", width: 390, height: 844 }, // iPhone Pro
-    { name: "tablet", width: 768, height: 1024 }, // iPad
-  ]),
-  maxNavigationIterations: z.number().default(20),
-  screenshotQuality: z.number().default(80),
-  actionDelay: z.number().default(2000),
-  testDir: z.string().default("./tests"),
-  knowledgeBaseDir: z.string().default("./knowledge-base"),
-  reportDir: z.string().default("./reports"),
-  runHistoryDir: z.string().default("./.qa-runs"),
-  lessonsDir: z.string().default("./.qa-lessons"),
+  viewports: z
+    .array(ViewportSchema)
+    .default([...DEFAULT_VIEWPORTS]),
+  maxNavigationIterations: z.number().default(MAX_NAVIGATION_ITERATIONS),
+  screenshotQuality: z.number().default(DEFAULT_SCREENSHOT_QUALITY),
+  actionDelay: z.number().default(DEFAULT_ACTION_DELAY),
   debug: z.boolean().default(false),
   saveDebugScreenshots: z.boolean().default(false),
 });

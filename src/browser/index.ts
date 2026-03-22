@@ -1,6 +1,7 @@
 import { getBrowserManager } from "./manager.js";
 import * as actions from "./page-actions.js";
 import * as accessibility from "./accessibility.js";
+import { CI, HEADLESS } from "../env.js";
 
 // Re-export core modules
 export * from "./manager.js";
@@ -15,9 +16,7 @@ export * from "./accessibility.js";
 
 export async function launchBrowser() {
   const manager = getBrowserManager();
-  const isCI = process.env.CI === "true";
-  const isHeadless = isCI || process.env.HEADLESS === "true";
-  return await manager.launch(isHeadless);
+  return await manager.launch(CI || HEADLESS);
 }
 
 export async function connectCDP(endpoint: string) {
