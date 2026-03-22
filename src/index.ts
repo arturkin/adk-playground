@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import readline from "node:readline";
 import { Command } from "commander";
 import { config } from "./config/index.js";
 import { TEST_DIR } from "./constants.js";
@@ -15,8 +19,14 @@ import {
 import { runStore, detectRegressions, lessonStore } from "./memory/index.js";
 import { formatMarkdownReport, reportWriter } from "./reports/index.js";
 import type { TestRunResult, RegressionReport } from "./types/report.js";
-import { setOutputDir } from "./tools/planning.js";
+import { setOutputDir, slugify } from "./tools/planning.js";
 import { setVerbose } from "./logger.js";
+import {
+  resolveViewportSize,
+  runCodegen,
+  convertRecordingToTest,
+  refineWithAnswers,
+} from "./recorder/index.js";
 
 // --- Helpers ---
 
@@ -108,6 +118,120 @@ function printRunSummary(
   if (activeLessonCount > 0) {
     console.log(
       `\n\x1b[36mℹ️  Active failure lessons: ${activeLessonCount} (will be injected into next run)\x1b[0m`,
+    );
+  }
+}
+
+async function readUserInput(prompt: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) => {
+    rl.question(prompt, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+}
+
+async function handleRecording(
+  url: string,
+  options: { viewport: string; outputDir: string; title: string | undefined },
+): Promise<void> {
+  // Validate viewport early
+  try {
+    resolveViewportSize(options.viewport);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
+
+  const tempFile = path.join(os.tmpdir(), `adk-qa-recording-${Date.now()}.ts`);
+
+  console.log(`\x1b[36mRecording started. Interact with the browser.\x1b[0m`);
+  console.log(`Viewport: ${options.viewport} | URL: ${url}`);
+  console.log(`Press Ctrl+C or close the browser to stop recording.\n`);
+
+  let code = "";
+  try {
+    const result = await runCodegen(url, {
+      viewport: options.viewport,
+      outputFile: tempFile,
+    });
+    code = result.code;
+  } finally {
+    // Clean up temp file regardless of outcome
+    try {
+      fs.unlinkSync(tempFile);
+    } catch {
+      // File may not exist if codegen never wrote it
+    }
+  }
+
+  if (!code.trim()) {
+    console.error("No interactions recorded. Exiting.");
+    return;
+  }
+
+  console.log("\nRecording captured. Converting to test format...");
+
+  let result = await convertRecordingToTest(
+    {
+      playwrightCode: code,
+      url,
+      viewport: options.viewport,
+      title: options.title,
+    },
+    config.apiKey,
+    config.models.navigator,
+  );
+
+  if (result.questions && result.questions.length > 0) {
+    console.log("\nThe following steps need clarification:");
+    result.questions.forEach((q, i) => console.log(`  ${i + 1}. ${q}`));
+
+    const answers = await readUserInput(
+      "\nPlease answer the questions above: ",
+    );
+
+    result = await refineWithAnswers(
+      result,
+      answers,
+      {
+        playwrightCode: code,
+        url,
+        viewport: options.viewport,
+        title: options.title,
+      },
+      config.apiKey,
+      config.models.navigator,
+    );
+  }
+
+  // Ensure output directory exists
+  fs.mkdirSync(options.outputDir, { recursive: true });
+
+  // Extract title from markdown (first H1 line) for filename
+  const titleMatch = /^# (.+)$/m.exec(result.markdown);
+  const testTitle = titleMatch
+    ? titleMatch[1]
+    : (options.title ?? "recorded-test");
+  const filename = `${slugify(testTitle)}.md`;
+  const filePath = path.resolve(options.outputDir, filename);
+
+  fs.writeFileSync(filePath, result.markdown, "utf-8");
+
+  // Validate the generated file
+  try {
+    const parsed = parseTestCase(filePath);
+    console.log(`\n\x1b[32mTest saved: ${filePath}\x1b[0m`);
+    console.log(`  Title: ${parsed.title}`);
+    console.log(`  Steps: ${parsed.steps.length}`);
+    console.log(`  Assertions: ${parsed.assertions.length}`);
+  } catch (err) {
+    console.warn(
+      `\x1b[33mTest saved to ${filePath}, but validation warning: ${err instanceof Error ? err.message : String(err)}\x1b[0m`,
     );
   }
 }
@@ -219,7 +343,11 @@ program
     false,
   )
   .option("--cdp <endpoint>", "Connect to existing browser via CDP endpoint")
-  .option("--verbose", "Show all debug output (clicked elements, tool calls, captures)", false)
+  .option(
+    "--verbose",
+    "Show all debug output (clicked elements, tool calls, captures)",
+    false,
+  )
   .action(async (options) => {
     requireApiKey();
     setVerbose(options.verbose);
@@ -350,6 +478,30 @@ program
     } finally {
       await browser.close();
     }
+  });
+
+program
+  .command("record")
+  .description("Record browser interactions and generate a test case")
+  .argument("<url>", "URL to start recording from")
+  .option(
+    "--viewport <preset>",
+    "Viewport preset (desktop, mobile, mobile-pro, tablet)",
+    "desktop",
+  )
+  .option(
+    "--output-dir <dir>",
+    "Output directory for generated test",
+    "./tests",
+  )
+  .option("--title <title>", "Test title (auto-generated if not provided)")
+  .action(async (url, options) => {
+    requireApiKey();
+    await handleRecording(url, {
+      viewport: options.viewport,
+      outputDir: options.outputDir,
+      title: options.title,
+    });
   });
 
 program.parse();

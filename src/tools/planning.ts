@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { parseTestCase } from "../tests/parser.js";
 
-function slugify(text: string): string {
+export function slugify(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -12,7 +12,7 @@ function slugify(text: string): string {
     .substring(0, 50);
 }
 
-function formatTestMarkdown(data: {
+export function formatTestMarkdown(data: {
   title: string;
   url: string;
   viewport: string;
