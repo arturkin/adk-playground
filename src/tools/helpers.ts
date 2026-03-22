@@ -5,6 +5,7 @@ import {
   getScreenshot,
   getBrowserManager,
 } from "../browser/index.js";
+import { isVerbose } from "../logger.js";
 
 /**
  * Helper to capture state after a browser action.
@@ -40,28 +41,30 @@ export async function captureBrowserState(
         ? "incremental (no changes)"
         : "incremental diff"
       : "full";
-    console.log(
-      `    \x1b[34m[capture]\x1b[0m Accessibility elements: ${elements.length} (${snapshotLabel})`,
-    );
-
-    // Log current URL and element summary for debugging
-    try {
-      const page = await getBrowserManager().getActivePage();
+    if (isVerbose()) {
       console.log(
-        `    \x1b[34m[capture]\x1b[0m URL: ${page.url()} | Elements: ${elements.length} | Step: ${stepCount}`,
+        `    \x1b[34m[capture]\x1b[0m Accessibility elements: ${elements.length} (${snapshotLabel})`,
       );
-      // Log a summary of element roles (skip for no-change snapshots)
-      if (elements.length > 0) {
-        const roleCounts: Record<string, number> = {};
-        for (const el of elements) {
-          roleCounts[el.role] = (roleCounts[el.role] || 0) + 1;
-        }
+
+      // Log current URL and element summary for debugging
+      try {
+        const page = await getBrowserManager().getActivePage();
         console.log(
-          `    \x1b[34m[capture]\x1b[0m Role breakdown: ${JSON.stringify(roleCounts)}`,
+          `    \x1b[34m[capture]\x1b[0m URL: ${page.url()} | Elements: ${elements.length} | Step: ${stepCount}`,
         );
+        // Log a summary of element roles (skip for no-change snapshots)
+        if (elements.length > 0) {
+          const roleCounts: Record<string, number> = {};
+          for (const el of elements) {
+            roleCounts[el.role] = (roleCounts[el.role] || 0) + 1;
+          }
+          console.log(
+            `    \x1b[34m[capture]\x1b[0m Role breakdown: ${JSON.stringify(roleCounts)}`,
+          );
+        }
+      } catch {
+        /* ignore logging errors */
       }
-    } catch {
-      /* ignore logging errors */
     }
 
     // For incremental no-change snapshots, keep previous state intact

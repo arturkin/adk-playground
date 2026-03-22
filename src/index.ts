@@ -16,6 +16,7 @@ import { runStore, detectRegressions, lessonStore } from "./memory/index.js";
 import { formatMarkdownReport, reportWriter } from "./reports/index.js";
 import type { TestRunResult, RegressionReport } from "./types/report.js";
 import { setOutputDir } from "./tools/planning.js";
+import { setVerbose } from "./logger.js";
 
 // --- Helpers ---
 
@@ -218,8 +219,10 @@ program
     false,
   )
   .option("--cdp <endpoint>", "Connect to existing browser via CDP endpoint")
+  .option("--verbose", "Show all debug output (clicked elements, tool calls, captures)", false)
   .action(async (options) => {
     requireApiKey();
+    setVerbose(options.verbose);
 
     if (options.cdp) {
       config.cdpEndpoint = options.cdp;

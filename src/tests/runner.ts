@@ -24,6 +24,7 @@ import {
 import { loadKnowledgeBase } from "./discovery.js";
 import { getFunctionCalls, stringifyContent } from "@google/adk";
 import { execSync } from "child_process";
+import { isVerbose } from "../logger.js";
 
 export interface RunOptions {
   autoFix?: boolean;
@@ -149,9 +150,11 @@ export async function runTestCase(
           );
         }
 
-        const functionCalls = getFunctionCalls(event);
-        for (const call of functionCalls) {
-          console.log(`    \x1b[33m[Tool: ${call.name}] calling...\x1b[0m`);
+        if (isVerbose()) {
+          const functionCalls = getFunctionCalls(event);
+          for (const call of functionCalls) {
+            console.log(`    \x1b[33m[Tool: ${call.name}] calling...\x1b[0m`);
+          }
         }
       }
     }

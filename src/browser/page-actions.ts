@@ -1,5 +1,6 @@
 import type { Page } from "playwright";
 import { resolveRef } from "./accessibility.js";
+import { isVerbose } from "../logger.js";
 
 export async function navigateTo(page: Page, url: string) {
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -15,9 +16,11 @@ export async function scrollPage(
     y: window.scrollY,
     pageH: document.body.scrollHeight,
   }));
-  console.log(
-    `    \x1b[35m[scroll ${direction}]\x1b[0m Before: scrollY=${scrollBefore.y}, pageHeight=${scrollBefore.pageH}`,
-  );
+  if (isVerbose()) {
+    console.log(
+      `    \x1b[35m[scroll ${direction}]\x1b[0m Before: scrollY=${scrollBefore.y}, pageHeight=${scrollBefore.pageH}`,
+    );
+  }
 
   await page.evaluate((dir) => {
     if (dir === "down") window.scrollBy(0, window.innerHeight);
@@ -27,9 +30,11 @@ export async function scrollPage(
   }, direction);
 
   const scrollAfter = await page.evaluate(() => window.scrollY);
-  console.log(
-    `    \x1b[35m[scroll ${direction}]\x1b[0m After: scrollY=${scrollAfter}`,
-  );
+  if (isVerbose()) {
+    console.log(
+      `    \x1b[35m[scroll ${direction}]\x1b[0m After: scrollY=${scrollAfter}`,
+    );
+  }
 }
 
 export async function clickAt(page: Page, x: number, y: number) {
@@ -39,7 +44,9 @@ export async function clickAt(page: Page, x: number, y: number) {
 export async function hoverElement(page: Page, ref: string) {
   const locator = resolveRef(page, ref);
   await locator.hover({ timeout: 5000 });
-  console.log(`    \x1b[35m[hover_element ${ref}]\x1b[0m Hovered`);
+  if (isVerbose()) {
+    console.log(`    \x1b[35m[hover_element ${ref}]\x1b[0m Hovered`);
+  }
 }
 
 export async function clickElement(page: Page, ref: string) {
@@ -50,9 +57,11 @@ export async function clickElement(page: Page, ref: string) {
   const text = await locator
     .evaluate((el) => (el.textContent || "").trim().slice(0, 80))
     .catch(() => "");
-  console.log(
-    `    \x1b[35m[click_element ${ref}]\x1b[0m tag=${tagName} text="${text}"`,
-  );
+  if (isVerbose()) {
+    console.log(
+      `    \x1b[35m[click_element ${ref}]\x1b[0m tag=${tagName} text="${text}"`,
+    );
+  }
 
   // Playwright's click auto-scrolls, auto-waits for actionability,
   // and handles navigation detection
@@ -64,9 +73,11 @@ export async function clickElement(page: Page, ref: string) {
     .catch(() => {});
 
   const currentUrl = page.url();
-  console.log(
-    `    \x1b[35m[click_element ${ref}]\x1b[0m Current URL: ${currentUrl}`,
-  );
+  if (isVerbose()) {
+    console.log(
+      `    \x1b[35m[click_element ${ref}]\x1b[0m Current URL: ${currentUrl}`,
+    );
+  }
 }
 
 export async function typeElement(page: Page, ref: string, text: string) {
