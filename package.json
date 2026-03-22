@@ -8,7 +8,6 @@
     "run": "bun src/index.ts",
     "test:auto": "bun src/index.ts auto --test-dir ./tests",
     "test:auto:local": "HEADLESS=false bun src/index.ts auto --test-dir ./tests",
-    "eval": "bun src/evals/index.ts",
     "dev": "npx adk web",
     "build": "tsc",
     "start": "node src/index.js",

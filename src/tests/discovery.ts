@@ -8,9 +8,7 @@ import path from "path";
  * Discovers all markdown test files in the specified directory and parses them.
  */
 export async function discoverTests(testDir: string): Promise<TestSuite> {
-  const files = await glob(`${testDir}/**/*.md`, {
-    ignore: [`${testDir}/negative/**`],
-  });
+  const files = await glob(`${testDir}/**/*.md`);
   const testCases = files.map((file) => parseTestCase(file));
 
   return {

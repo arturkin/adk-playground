@@ -78,14 +78,6 @@ bun start auto --test-file ./tests/search-car-rental.md
 bun start auto --auto-fix
 ```
 
-### Evaluation Mode
-
-Run evaluation benchmarks:
-
-```bash
-bun run eval
-```
-
 ## Writing Tests
 
 Tests are defined in Markdown files in the `tests/` directory:
