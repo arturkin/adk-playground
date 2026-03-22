@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { TestRunResult } from "../types/report.js";
 import { RUN_HISTORY_DIR, MAX_RUNS_TO_KEEP } from "../constants.js";
+import { log } from "../logger/index.js";
 
 /**
  * Handles persistence of test run results to the file system.
@@ -92,7 +93,9 @@ export class RunStore {
       const data = fs.readFileSync(latestPath, "utf-8");
       return JSON.parse(data) as TestRunResult;
     } catch (e) {
-      console.error("Failed to load latest run:", e);
+      log.error(
+        `Failed to load latest run: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return null;
     }
   }

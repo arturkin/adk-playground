@@ -20,7 +20,7 @@ import { runStore, detectRegressions, lessonStore } from "./memory/index.js";
 import { formatMarkdownReport, reportWriter } from "./reports/index.js";
 import type { TestRunResult, RegressionReport } from "./types/report.js";
 import { setOutputDir, slugify } from "./tools/planning.js";
-import { setVerbose } from "./logger.js";
+import { log, setVerbose } from "./logger/index.js";
 import {
   resolveViewportSize,
   runCodegen,
@@ -32,7 +32,7 @@ import {
 
 function requireApiKey(): void {
   if (!config.apiKey) {
-    console.error("Error: GOOGLE_GENAI_API_KEY is not set.");
+    log.error("GOOGLE_GENAI_API_KEY is not set.");
     process.exit(1);
   }
 }
@@ -43,12 +43,12 @@ async function resolveTestSuite(options: {
   testDir: string;
 }) {
   if (options.testFile) {
-    console.log(`Running single test file: ${options.testFile}`);
+    log.info(`Running single test file: ${options.testFile}`);
     try {
       const testCase = parseTestCase(options.testFile);
       return { name: "Single Test", testCases: [testCase] };
     } catch (e) {
-      console.error(`Failed to parse test file: ${(e as Error).message}`);
+      log.error(`Failed to parse test file: ${(e as Error).message}`);
       process.exit(1);
     }
   }
@@ -62,19 +62,17 @@ async function resolveTestSuite(options: {
         tc.title.toLowerCase().includes(query),
     );
     if (matched.length === 0) {
-      console.error(
+      log.error(
         `No tests matching "${options.test}" found in ${options.testDir}`,
       );
       process.exit(1);
     }
-    console.log(
-      `Running ${matched.length} test(s) matching "${options.test}":`,
-    );
-    matched.forEach((tc) => console.log(`  - ${tc.title} (${tc.id})`));
+    log.info(`Running ${matched.length} test(s) matching "${options.test}":`);
+    matched.forEach((tc) => log.info(`  - ${tc.title} (${tc.id})`));
     return { name: `Filtered: ${options.test}`, testCases: matched };
   }
 
-  console.log(`Discovering tests in: ${options.testDir}`);
+  log.info(`Discovering tests in: ${options.testDir}`);
   return discoverTests(options.testDir);
 }
 
@@ -85,39 +83,34 @@ function printRunSummary(
 ): void {
   const { summary } = runResult;
 
-  console.log("\n\x1b[1m--- TEST RUN SUMMARY ---\x1b[0m");
-  console.log(`Run ID: ${runResult.runId}`);
-  console.log(`Total: ${summary.total}`);
-  console.log(`Passed: \x1b[32m${summary.passed}\x1b[0m`);
-  console.log(`Failed: \x1b[31m${summary.failed}\x1b[0m`);
+  log.info("\n--- TEST RUN SUMMARY ---");
+  log.info(`Run ID: ${runResult.runId}`);
+  log.info(`Total: ${summary.total}`);
+  log.info(`Passed: ${summary.passed}`);
+  log.info(`Failed: ${summary.failed}`);
   if (summary.inconclusive > 0)
-    console.log(`Inconclusive: \x1b[33m${summary.inconclusive}\x1b[0m`);
-  if (summary.errors > 0)
-    console.log(`Errors: \x1b[31m${summary.errors}\x1b[0m`);
-  console.log(`Duration: ${(summary.duration / 1000).toFixed(2)}s`);
+    log.warn(`Inconclusive: ${summary.inconclusive}`);
+  if (summary.errors > 0) log.error(`Errors: ${summary.errors}`);
+  log.info(`Duration: ${(summary.duration / 1000).toFixed(2)}s`);
 
   if (regressionReport.regressions.length > 0) {
-    console.log("\n\x1b[31m⚠️  REGRESSIONS DETECTED:\x1b[0m");
+    log.error("\nREGRESSIONS DETECTED:");
     regressionReport.regressions.forEach((r) => {
-      console.log(
-        `  - \x1b[1m${r.title}\x1b[0m: ${r.previousStatus} -> \x1b[31m${r.currentStatus}\x1b[0m`,
-      );
-      console.log(`    Details: ${r.details}`);
+      log.error(`  - ${r.title}: ${r.previousStatus} -> ${r.currentStatus}`);
+      log.error(`    Details: ${r.details}`);
     });
   }
 
   if (regressionReport.improvements.length > 0) {
-    console.log("\n\x1b[32m✨ IMPROVEMENTS DETECTED:\x1b[0m");
+    log.info("\nIMPROVEMENTS DETECTED:");
     regressionReport.improvements.forEach((i) => {
-      console.log(
-        `  - \x1b[1m${i.title}\x1b[0m: ${i.previousStatus} -> \x1b[32m${i.currentStatus}\x1b[0m`,
-      );
+      log.info(`  - ${i.title}: ${i.previousStatus} -> ${i.currentStatus}`);
     });
   }
 
   if (activeLessonCount > 0) {
-    console.log(
-      `\n\x1b[36mℹ️  Active failure lessons: ${activeLessonCount} (will be injected into next run)\x1b[0m`,
+    log.info(
+      `\nActive failure lessons: ${activeLessonCount} (will be injected into next run)`,
     );
   }
 }
@@ -143,15 +136,15 @@ async function handleRecording(
   try {
     resolveViewportSize(options.viewport);
   } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
+    log.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
   }
 
   const tempFile = path.join(os.tmpdir(), `adk-qa-recording-${Date.now()}.ts`);
 
-  console.log(`\x1b[36mRecording started. Interact with the browser.\x1b[0m`);
-  console.log(`Viewport: ${options.viewport} | URL: ${url}`);
-  console.log(`Press Ctrl+C or close the browser to stop recording.\n`);
+  log.info("Recording started. Interact with the browser.");
+  log.info(`Viewport: ${options.viewport} | URL: ${url}`);
+  log.info("Press Ctrl+C or close the browser to stop recording.\n");
 
   let code = "";
   try {
@@ -170,11 +163,11 @@ async function handleRecording(
   }
 
   if (!code.trim()) {
-    console.error("No interactions recorded. Exiting.");
+    log.error("No interactions recorded. Exiting.");
     return;
   }
 
-  console.log("\nRecording captured. Converting to test format...");
+  log.info("\nRecording captured. Converting to test format...");
 
   let result = await convertRecordingToTest(
     {
@@ -188,8 +181,8 @@ async function handleRecording(
   );
 
   if (result.questions && result.questions.length > 0) {
-    console.log("\nThe following steps need clarification:");
-    result.questions.forEach((q, i) => console.log(`  ${i + 1}. ${q}`));
+    log.info("\nThe following steps need clarification:");
+    result.questions.forEach((q, i) => log.info(`  ${i + 1}. ${q}`));
 
     const answers = await readUserInput(
       "\nPlease answer the questions above: ",
@@ -225,13 +218,13 @@ async function handleRecording(
   // Validate the generated file
   try {
     const parsed = parseTestCase(filePath);
-    console.log(`\n\x1b[32mTest saved: ${filePath}\x1b[0m`);
-    console.log(`  Title: ${parsed.title}`);
-    console.log(`  Steps: ${parsed.steps.length}`);
-    console.log(`  Assertions: ${parsed.assertions.length}`);
+    log.info(`\nTest saved: ${filePath}`);
+    log.info(`  Title: ${parsed.title}`);
+    log.info(`  Steps: ${parsed.steps.length}`);
+    log.info(`  Assertions: ${parsed.assertions.length}`);
   } catch (err) {
-    console.warn(
-      `\x1b[33mTest saved to ${filePath}, but validation warning: ${err instanceof Error ? err.message : String(err)}\x1b[0m`,
+    log.warn(
+      `Test saved to ${filePath}, but validation warning: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 }
@@ -254,8 +247,8 @@ program
   .action(async (task, options) => {
     requireApiKey();
 
-    console.log(`Starting manual QA task: "${task}"`);
-    if (options.url) console.log(`Starting URL: ${options.url}`);
+    log.info(`Starting manual QA task: "${task}"`);
+    if (options.url) log.info(`Starting URL: ${options.url}`);
 
     const runner = createRunner(config);
     const browser = getBrowserManager();
@@ -277,7 +270,7 @@ program
         },
       });
 
-      console.log(`Session created: ${session.id}`);
+      log.info(`Session created: ${session.id}`);
 
       for await (const event of runner.runAsync({
         userId: "cli",
@@ -294,16 +287,17 @@ program
         if (event.author && event.author !== "user") {
           const text = stringifyContent(event);
           if (text) {
-            console.log(
-              `\x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 100)}${text.length > 100 ? "..." : ""}`,
+            log.info(
+              text.substring(0, 100) + (text.length > 100 ? "..." : ""),
+              { agent: event.author },
             );
           }
 
           const functionCalls = getFunctionCalls(event);
           for (const call of functionCalls) {
-            console.log(
-              `  \x1b[33m[Tool: ${call.name}] calling with: ${JSON.stringify(call.args)}\x1b[0m`,
-            );
+            log.debug(`calling with: ${JSON.stringify(call.args)}`, {
+              tool: call.name,
+            });
           }
         }
       }
@@ -314,12 +308,14 @@ program
         sessionId: session.id,
       });
       const finalReport = sessionDetails?.state?.["final_report"];
-      console.log("\n\x1b[1m--- FINAL REPORT ---\x1b[0m");
-      console.log(
+      log.info("\n--- FINAL REPORT ---");
+      log.info(
         typeof finalReport === "string" ? finalReport : "No report generated.",
       );
     } catch (error) {
-      console.error("Task failed:", error);
+      log.error(
+        `Task failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       if (!config.headless) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -359,12 +355,12 @@ program
     const suite = await resolveTestSuite(options);
 
     if (suite.testCases.length === 0) {
-      console.log("No tests found.");
+      log.info("No tests found.");
       process.exit(0);
     }
 
-    console.log(`Found ${suite.testCases.length} tests. Starting execution...`);
-    console.log(
+    log.info(`Found ${suite.testCases.length} tests. Starting execution...`);
+    log.info(
       `Models: navigator=${config.models.navigator}, validator=${config.models.validator}, reporter=${config.models.reporter}, evaluator=${config.models.evaluator}`,
     );
 
@@ -384,7 +380,7 @@ program
         runResult.runId,
       );
       const jsonPath = reportWriter.writeJsonReport(runResult);
-      console.log(`Reports: ${mdPath}, ${jsonPath}`);
+      log.info(`Reports: ${mdPath}, ${jsonPath}`);
 
       const activeLessonCount = suite.testCases.reduce((count, testCase) => {
         return count + lessonStore.getActiveLessons(testCase.id).length;
@@ -392,15 +388,24 @@ program
 
       printRunSummary(runResult, regressionReport, activeLessonCount);
 
+      // Write GH Actions job summary
+      const summaryPath = process.env["GITHUB_STEP_SUMMARY"];
+      if (summaryPath) {
+        fs.appendFileSync(summaryPath, markdownReport);
+      }
+
       exitCode =
         runResult.summary.failed > 0 || regressionReport.regressions.length > 0
           ? 1
           : 0;
     } catch (error) {
-      console.error("Test run failed:", error);
+      log.error(
+        `Test run failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       exitCode = 1;
     } finally {
       await getBrowserManager().close();
+      await log.flush();
     }
     process.exit(exitCode);
   });
@@ -419,8 +424,8 @@ program
     requireApiKey();
 
     const maxTests = parseInt(options.maxTests, 10);
-    console.log(`Generating up to ${maxTests} test(s) for: ${url}`);
-    console.log(`Output directory: ${options.outputDir}`);
+    log.info(`Generating up to ${maxTests} test(s) for: ${url}`);
+    log.info(`Output directory: ${options.outputDir}`);
 
     setOutputDir(options.outputDir);
     const planner = buildPlannerAgent(config, maxTests);
@@ -457,24 +462,27 @@ program
         if (event.author && event.author !== "user") {
           const text = stringifyContent(event);
           if (text) {
-            console.log(
-              `\x1b[36m[${event.author}]\x1b[0m ${text.substring(0, 200)}${text.length > 200 ? "..." : ""}`,
+            log.info(
+              text.substring(0, 200) + (text.length > 200 ? "..." : ""),
+              { agent: event.author },
             );
           }
           const functionCalls = getFunctionCalls(event);
           for (const call of functionCalls) {
-            console.log(
-              `  \x1b[33m[Tool: ${call.name}]\x1b[0m ${JSON.stringify(call.args).substring(0, 100)}`,
-            );
+            log.debug(JSON.stringify(call.args).substring(0, 100), {
+              tool: call.name,
+            });
           }
         }
       }
 
-      console.log(
-        `\n\x1b[32mTest generation complete. Check ${options.outputDir} for generated test files.\x1b[0m`,
+      log.info(
+        `\nTest generation complete. Check ${options.outputDir} for generated test files.`,
       );
     } catch (error) {
-      console.error("Generation failed:", error);
+      log.error(
+        `Generation failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       await browser.close();
     }

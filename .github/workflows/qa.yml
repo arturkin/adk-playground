@@ -30,8 +30,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            .qa-lessons
-            .qa-runs/latest.json
+            artifacts/lessons
+            artifacts/runs/latest.json
           key: qa-memory-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
             qa-memory-${{ github.ref_name }}-
@@ -41,18 +41,21 @@ jobs:
         run: bun run test:auto
         env:
           GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
-          HEADLESS: true
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          HEADLESS: "true"
+          CI: "true"
 
       - name: Upload Run History
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: qa-run-history
-          path: .qa-runs/
+          path: artifacts/runs/
 
       - name: Upload Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: qa-reports
-          path: reports/
+          path: artifacts/reports/

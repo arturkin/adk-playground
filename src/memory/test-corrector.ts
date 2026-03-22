@@ -3,6 +3,7 @@ import path from "path";
 import { TestCase } from "../types/test.js";
 import { FailureLesson, TestCorrection } from "../types/lessons.js";
 import { LESSONS_DIR, CORRECTION_THRESHOLD } from "../constants.js";
+import { log } from "../logger/index.js";
 
 /**
  * Manages test definition corrections based on repeated failures.
@@ -109,7 +110,7 @@ export class TestCorrectionManager {
     // Create backup
     const backupPath = `${testFilePath}.bak`;
     fs.copyFileSync(testFilePath, backupPath);
-    console.log(`  \x1b[36m[Backup] Created ${backupPath}\x1b[0m`);
+    log.info(`[Backup] Created ${backupPath}`);
 
     // Read test file (reserved for future section-specific replacement)
     fs.readFileSync(testFilePath, "utf-8");
@@ -118,11 +119,9 @@ export class TestCorrectionManager {
     // Note: This is a simplified implementation. Real implementation would need
     // to parse the markdown test file format and replace specific sections.
     // For now, we just log the suggestion.
-    console.log(
-      `  \x1b[33m[Correction] Would replace in ${correction.section}:\x1b[0m`,
-    );
-    console.log(`    From: ${correction.originalContent.substring(0, 100)}...`);
-    console.log(`    To: ${correction.suggestedContent.substring(0, 100)}...`);
+    log.info(`[Correction] Would replace in ${correction.section}:`);
+    log.info(`  From: ${correction.originalContent.substring(0, 100)}...`);
+    log.info(`  To: ${correction.suggestedContent.substring(0, 100)}...`);
 
     // Mark as applied
     const allCorrections = this.getAllCorrections();
@@ -157,7 +156,9 @@ export class TestCorrectionManager {
       const data = fs.readFileSync(this.correctionsFile, "utf-8");
       return JSON.parse(data) as TestCorrection[];
     } catch (e) {
-      console.error("Failed to load corrections:", e);
+      log.error(
+        `Failed to load corrections: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return [];
     }
   }

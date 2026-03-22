@@ -7,6 +7,7 @@ import {
 import type { ViewportConfig } from "../types/browser.js";
 import { USER_AGENT } from "../env.js";
 import { resetSnapshotTracking } from "./accessibility.js";
+import { log } from "../logger/index.js";
 
 export type { Browser, BrowserContext, Page } from "playwright";
 
@@ -175,7 +176,9 @@ export class BrowserManager {
       try {
         await this.browser.close();
       } catch (e) {
-        console.error("Error closing browser:", e);
+        log.error(
+          `Error closing browser: ${e instanceof Error ? e.message : String(e)}`,
+        );
       }
       this.browser = null;
       this.context = null;

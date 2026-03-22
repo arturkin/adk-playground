@@ -1,6 +1,6 @@
 import type { Page } from "playwright";
 import { resolveRef } from "./accessibility.js";
-import { isVerbose } from "../logger.js";
+import { log, isVerbose } from "../logger/index.js";
 
 export async function navigateTo(page: Page, url: string) {
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -17,8 +17,8 @@ export async function scrollPage(
     pageH: document.body.scrollHeight,
   }));
   if (isVerbose()) {
-    console.log(
-      `    \x1b[35m[scroll ${direction}]\x1b[0m Before: scrollY=${scrollBefore.y}, pageHeight=${scrollBefore.pageH}`,
+    log.debug(
+      `[scroll ${direction}] Before: scrollY=${scrollBefore.y}, pageHeight=${scrollBefore.pageH}`,
     );
   }
 
@@ -31,9 +31,7 @@ export async function scrollPage(
 
   const scrollAfter = await page.evaluate(() => window.scrollY);
   if (isVerbose()) {
-    console.log(
-      `    \x1b[35m[scroll ${direction}]\x1b[0m After: scrollY=${scrollAfter}`,
-    );
+    log.debug(`[scroll ${direction}] After: scrollY=${scrollAfter}`);
   }
 }
 
@@ -45,7 +43,7 @@ export async function hoverElement(page: Page, ref: string) {
   const locator = resolveRef(page, ref);
   await locator.hover({ timeout: 5000 });
   if (isVerbose()) {
-    console.log(`    \x1b[35m[hover_element ${ref}]\x1b[0m Hovered`);
+    log.debug(`[hover_element ${ref}] Hovered`);
   }
 }
 
@@ -58,9 +56,7 @@ export async function clickElement(page: Page, ref: string) {
     .evaluate((el) => (el.textContent || "").trim().slice(0, 80))
     .catch(() => "");
   if (isVerbose()) {
-    console.log(
-      `    \x1b[35m[click_element ${ref}]\x1b[0m tag=${tagName} text="${text}"`,
-    );
+    log.debug(`[click_element ${ref}] tag=${tagName} text="${text}"`);
   }
 
   // Playwright's click auto-scrolls, auto-waits for actionability,
@@ -74,9 +70,7 @@ export async function clickElement(page: Page, ref: string) {
 
   const currentUrl = page.url();
   if (isVerbose()) {
-    console.log(
-      `    \x1b[35m[click_element ${ref}]\x1b[0m Current URL: ${currentUrl}`,
-    );
+    log.debug(`[click_element ${ref}] Current URL: ${currentUrl}`);
   }
 }
 

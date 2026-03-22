@@ -1,6 +1,7 @@
 import { ConfigSchema, type AppConfig } from "./schema.js";
 import { getModelName } from "./models.js";
 import * as env from "../env.js";
+import { log } from "../logger/index.js";
 
 function loadConfig(): AppConfig {
   const config = {
@@ -30,7 +31,9 @@ function loadConfig(): AppConfig {
   const result = ConfigSchema.safeParse(cleanConfig);
 
   if (!result.success) {
-    console.error("❌ Invalid configuration:", result.error.format());
+    log.error(
+      `Invalid configuration: ${JSON.stringify(result.error.format())}`,
+    );
     process.exit(1);
   }
 

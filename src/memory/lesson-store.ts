@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { FailureLesson } from "../types/lessons.js";
 import { LESSONS_DIR } from "../constants.js";
+import { log } from "../logger/index.js";
 
 /**
  * Handles persistence of failure lessons to the file system.
@@ -85,7 +86,9 @@ export class LessonStore {
       const data = fs.readFileSync(this.lessonsFile, "utf-8");
       return JSON.parse(data) as FailureLesson[];
     } catch (e) {
-      console.error("Failed to load lessons:", e);
+      log.error(
+        `Failed to load lessons: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return [];
     }
   }

@@ -1,5 +1,6 @@
 import type { Page, Frame } from "playwright";
 import { BrowserManager } from "./manager.js";
+import { log } from "../logger/index.js";
 
 function isRecoverableError(msg: string): boolean {
   return (
@@ -36,8 +37,8 @@ export async function robustEvaluate<T>(
         retries--;
         if (retries === 0) throw e;
 
-        console.warn(
-          `    \x1b[33m[robustEvaluate]\x1b[0m Retrying due to: ${msg.substring(0, 100)}... (${retries} retries left)`,
+        log.warn(
+          `[robustEvaluate] Retrying due to: ${msg.substring(0, 100)}... (${retries} retries left)`,
         );
 
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -47,9 +48,7 @@ export async function robustEvaluate<T>(
         try {
           const freshPage = await BrowserManager.getInstance().getActivePage();
           currentTarget = freshPage;
-          console.warn(
-            `    \x1b[33m[robustEvaluate]\x1b[0m Got fresh page, URL: ${freshPage.url()}`,
-          );
+          log.warn(`[robustEvaluate] Got fresh page, URL: ${freshPage.url()}`);
           // Wait for the page to be ready
           await freshPage
             .locator("body")
@@ -60,8 +59,8 @@ export async function robustEvaluate<T>(
             refreshErr instanceof Error
               ? refreshErr
               : new Error(String(refreshErr));
-          console.warn(
-            `    \x1b[33m[robustEvaluate]\x1b[0m Could not refresh page: ${refreshError.message}`,
+          log.warn(
+            `[robustEvaluate] Could not refresh page: ${refreshError.message}`,
           );
         }
       } else {
@@ -96,8 +95,8 @@ export async function robustScreenshot(
       if (isRecoverableError(msg)) {
         retries--;
         if (retries === 0) throw e;
-        console.warn(
-          `    \x1b[33m[robustScreenshot]\x1b[0m Retrying due to: ${msg.substring(0, 100)}... (${retries} retries left)`,
+        log.warn(
+          `[robustScreenshot] Retrying due to: ${msg.substring(0, 100)}... (${retries} retries left)`,
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
         delay *= 1.5;

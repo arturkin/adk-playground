@@ -1,4 +1,5 @@
 import { type Context, type LlmRequest, type LlmResponse } from "@google/adk";
+import { log } from "../logger/index.js";
 
 /**
  * Detects empty model responses (Gemini 3 + tools known issue) and injects a
@@ -22,21 +23,19 @@ export const emptyResponseNudgeCallback = ({
     // ADK silently swallows model errors (404 model not found, 429 quota, etc.)
     // and emits an event with errorCode instead of throwing. Surface them clearly.
     if (response.errorCode) {
-      console.error(
-        `  \x1b[31m[Model Error] ${response.errorCode}: ${response.errorMessage ?? "(no message)"}\x1b[0m`,
+      log.error(
+        `[Model Error] ${response.errorCode}: ${response.errorMessage ?? "(no message)"}`,
       );
       if (
         response.errorCode === "NOT_FOUND" ||
         response.errorMessage?.includes("not found")
       ) {
-        console.error(
-          `  \x1b[31m[Model Error] The model does not exist in the API. Check MODEL_ALIASES in src/config/models.ts.\x1b[0m`,
+        log.error(
+          `[Model Error] The model does not exist in the API. Check MODEL_ALIASES in src/config/models.ts.`,
         );
       }
     } else {
-      console.warn(
-        "  \x1b[33m[Warning] Model returned empty response — injecting nudge\x1b[0m",
-      );
+      log.warn("[Warning] Model returned empty response -- injecting nudge");
     }
     return {
       content: {

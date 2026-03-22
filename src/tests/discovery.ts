@@ -3,6 +3,7 @@ import { parseTestCase } from "./parser.js";
 import { TestSuite } from "../types/test.js";
 import fs from "fs";
 import path from "path";
+import { log } from "../logger/index.js";
 
 /**
  * Discovers all markdown test files in the specified directory and parses them.
@@ -22,16 +23,16 @@ export async function discoverTests(testDir: string): Promise<TestSuite> {
  */
 export async function loadKnowledgeBase(kbDir: string): Promise<string> {
   if (!fs.existsSync(kbDir)) {
-    console.warn(
-      `  \x1b[33m[Warning] Knowledge base directory not found: ${kbDir} — tests will run without domain context\x1b[0m`,
+    log.warn(
+      `[Warning] Knowledge base directory not found: ${kbDir} -- tests will run without domain context`,
     );
     return "No knowledge base available.";
   }
 
   const files = await glob(`${kbDir}/**/*.md`);
   if (files.length === 0) {
-    console.warn(
-      `  \x1b[33m[Warning] Knowledge base is empty (no .md files in ${kbDir}) — tests will run without domain context\x1b[0m`,
+    log.warn(
+      `[Warning] Knowledge base is empty (no .md files in ${kbDir}) -- tests will run without domain context`,
     );
     return "No knowledge base files found.";
   }

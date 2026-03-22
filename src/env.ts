@@ -36,3 +36,7 @@ export const MAX_ITERATIONS = int("MAX_ITERATIONS");
 export const DESKTOP_VIEWPORT = str("DESKTOP_VIEWPORT");
 export const MOBILE_VIEWPORT = str("MOBILE_VIEWPORT");
 export const USER_AGENT = str("USER_AGENT");
+
+// GCP Cloud Logging (optional)
+export const GCP_PROJECT_ID = str("GCP_PROJECT_ID");
+export const GCP_SA_KEY = str("GCP_SA_KEY");

@@ -24,7 +24,7 @@ import {
 import { loadKnowledgeBase } from "./discovery.js";
 import { getFunctionCalls, stringifyContent } from "@google/adk";
 import { execSync } from "child_process";
-import { isVerbose } from "../logger.js";
+import { log } from "../logger/index.js";
 
 export interface RunOptions {
   autoFix?: boolean;
@@ -41,7 +41,7 @@ export async function runTestCase(
   options: RunOptions = {},
 ): Promise<TestCaseResult> {
   const startTime = Date.now();
-  console.log(`\x1b[1mRunning Test: ${testCase.title}\x1b[0m`);
+  log.info(`Running Test: ${testCase.title}`);
 
   // Try to find viewport preset
   const viewport =
@@ -145,16 +145,15 @@ export async function runTestCase(
       if (event.author && event.author !== "user") {
         const text = stringifyContent(event);
         if (text) {
-          console.log(
-            `  \x1b[36m[Agent: ${event.author}]\x1b[0m ${text.substring(0, 500)}${text.length > 500 ? "..." : ""}`,
+          log.info(
+            `${text.substring(0, 500)}${text.length > 500 ? "..." : ""}`,
+            { agent: event.author },
           );
         }
 
-        if (isVerbose()) {
-          const functionCalls = getFunctionCalls(event);
-          for (const call of functionCalls) {
-            console.log(`    \x1b[33m[Tool: ${call.name}] calling...\x1b[0m`);
-          }
+        const functionCalls = getFunctionCalls(event);
+        for (const call of functionCalls) {
+          log.debug(`Tool: ${call.name} calling...`);
         }
       }
     }
@@ -296,30 +295,23 @@ export async function runTestCase(
         status = "inconclusive";
         statusReason = `Low evaluator confidence (${evaluation.confidence}/100): ${evaluation.reason}`;
       }
-      const evalColor =
-        evaluation.override === "FAIL"
-          ? "\x1b[31m"
-          : evaluation.confidence >= 70
-            ? "\x1b[32m"
-            : "\x1b[33m";
-      console.log(
-        `  ${evalColor}[Evaluator] confidence=${evaluation.confidence}/100${evaluation.override ? ` → OVERRIDE ${evaluation.override}` : ""}\x1b[0m — ${evaluation.reason}`,
+      log.info(
+        `[Evaluator] confidence=${evaluation.confidence}/100${evaluation.override ? ` → OVERRIDE ${evaluation.override}` : ""}`,
+        { reason: evaluation.reason },
       );
     }
 
-    const statusColor =
-      status === "passed"
-        ? "\x1b[32m"
-        : status === "failed"
-          ? "\x1b[31m"
-          : "\x1b[33m";
-    console.log(
-      `  ${statusColor}[${status.toUpperCase()}]\x1b[0m ${statusReason}`,
-    );
+    if (status === "failed") {
+      log.error(`[FAILED] ${statusReason}`, { testId: testCase.id });
+    } else if (status === "inconclusive") {
+      log.warn(`[INCONCLUSIVE] ${statusReason}`, { testId: testCase.id });
+    } else {
+      log.info(`[${status.toUpperCase()}] ${statusReason}`);
+    }
     if (noAssertionsRecorded) {
-      console.warn(
-        `  \x1b[33m[Warning] No assertions recorded — check validator model output above\x1b[0m`,
-      );
+      log.warn("No assertions recorded — check validator model output above", {
+        testId: testCase.id,
+      });
     }
 
     const testResult: TestCaseResult = {
@@ -344,8 +336,8 @@ export async function runTestCase(
       );
       const lesson = analyzeFailure(testResult, runId, prevConsecutiveCount);
       lessonStore.addLesson(lesson);
-      console.log(
-        `  \x1b[33m[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})\x1b[0m`,
+      log.info(
+        `[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})`,
       );
 
       // Check for test definition corrections after threshold
@@ -356,40 +348,34 @@ export async function runTestCase(
       );
 
       if (corrections.length > 0) {
-        console.log(
-          `  \x1b[33m[Test Corrections] ${corrections.length} suggestion(s) generated:\x1b[0m`,
+        log.info(
+          `[Test Corrections] ${corrections.length} suggestion(s) generated:`,
         );
         corrections.forEach((c) => {
-          console.log(`    - ${c.correctionType}: ${c.description}`);
+          log.info(`  - ${c.correctionType}: ${c.description}`);
         });
 
         if (options.autoFix) {
-          console.log(`  \x1b[33m[Auto-Fix] Applying corrections...\x1b[0m`);
+          log.info("[Auto-Fix] Applying corrections...");
           corrections.forEach((c) => {
             try {
               testCorrectionManager.applyCorrection(c);
             } catch (e) {
-              console.error(
-                `    Failed to apply correction: ${(e as Error).message}`,
-              );
+              log.error(`Failed to apply correction: ${(e as Error).message}`);
             }
           });
         } else {
-          console.log(
-            `  \x1b[36m[Hint] Use --auto-fix to automatically apply corrections\x1b[0m`,
-          );
+          log.info("[Hint] Use --auto-fix to automatically apply corrections");
         }
       }
     } else if (status === "passed") {
       lessonStore.markResolved(testCase.id);
-      console.log(
-        `  \x1b[32m[Self-Correction] Previous failures resolved\x1b[0m`,
-      );
+      log.info("[Self-Correction] Previous failures resolved");
     }
 
     return testResult;
   } catch (error) {
-    console.error(`Test failed with error: ${(error as Error).message}`);
+    log.error(`Test failed with error: ${(error as Error).message}`);
 
     const errorResult: TestCaseResult = {
       testId: testCase.id,
@@ -410,8 +396,8 @@ export async function runTestCase(
     );
     const lesson = analyzeFailure(errorResult, runId, prevConsecutiveCount);
     lessonStore.addLesson(lesson);
-    console.log(
-      `  \x1b[33m[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})\x1b[0m`,
+    log.info(
+      `[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})`,
     );
 
     // Check for corrections on error status too
@@ -422,22 +408,20 @@ export async function runTestCase(
     );
 
     if (corrections.length > 0) {
-      console.log(
-        `  \x1b[33m[Test Corrections] ${corrections.length} suggestion(s) generated:\x1b[0m`,
+      log.info(
+        `[Test Corrections] ${corrections.length} suggestion(s) generated:`,
       );
       corrections.forEach((c) => {
-        console.log(`    - ${c.correctionType}: ${c.description}`);
+        log.info(`  - ${c.correctionType}: ${c.description}`);
       });
 
       if (options.autoFix) {
-        console.log(`  \x1b[33m[Auto-Fix] Applying corrections...\x1b[0m`);
+        log.info("[Auto-Fix] Applying corrections...");
         corrections.forEach((c) => {
           try {
             testCorrectionManager.applyCorrection(c);
           } catch (e) {
-            console.error(
-              `    Failed to apply correction: ${(e as Error).message}`,
-            );
+            log.error(`Failed to apply correction: ${(e as Error).message}`);
           }
         });
       }
@@ -467,14 +451,15 @@ export async function runTestSuite(
   const runner = createRunner(config);
 
   for (const testCase of suite.testCases) {
-    let result = await runTestCase(testCase, config, runner, runId, options);
-    if (result.status === "inconclusive") {
-      console.log(
-        `  \x1b[33m[Retry] Inconclusive result — retrying once\x1b[0m`,
-      );
+    let result: TestCaseResult | undefined;
+    await log.group(`Test: ${testCase.title}`, async () => {
       result = await runTestCase(testCase, config, runner, runId, options);
-    }
-    results.push(result);
+      if (result.status === "inconclusive") {
+        log.warn("[Retry] Inconclusive result — retrying once");
+        result = await runTestCase(testCase, config, runner, runId, options);
+      }
+    });
+    results.push(result!);
   }
 
   const duration = Date.now() - startTime;

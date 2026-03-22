@@ -118,6 +118,28 @@ Configuration is managed via environment variables and validated with Zod. See `
 
 All runtime artifacts (reports, run history, lessons) are written to `artifacts/` (gitignored). Directory paths and other constants are defined in `src/constants.ts`.
 
+## GitHub Actions Secrets
+
+The CI pipeline uses the following secrets. Configure them in your repository's Settings > Secrets and variables > Actions.
+
+| Secret                 | Purpose                                        | Required                                 |
+| ---------------------- | ---------------------------------------------- | ---------------------------------------- |
+| `GOOGLE_GENAI_API_KEY` | Gemini API access for LLM agents               | Yes                                      |
+| `GCP_PROJECT_ID`       | GCP project for Cloud Logging                  | No                                       |
+| `GCP_SA_KEY`           | Service account key for Cloud Logging (base64) | No (required if `GCP_PROJECT_ID` is set) |
+
+### Setting up GCP Cloud Logging (optional)
+
+To send structured logs to Google Cloud Logging:
+
+1. Create a service account with the `roles/logging.logWriter` role
+2. Export the JSON key file
+3. Base64-encode it: `base64 -i sa-key.json | tr -d '\n'`
+4. Add the encoded string as the `GCP_SA_KEY` secret
+5. Add your GCP project ID as the `GCP_PROJECT_ID` secret
+
+Logs appear in GCP Cloud Logging under the `adk-qa` log name with labels for branch, commit, and run ID.
+
 ## Self-Correction System
 
 ADK-QA includes a 3-level self-correction pipeline that learns from failures:

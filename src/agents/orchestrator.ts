@@ -1,4 +1,5 @@
 import { BaseAgent, type InvocationContext, type Event } from "@google/adk";
+import { log } from "../logger/index.js";
 import { type AppConfig } from "../config/schema.js";
 import { buildNavigatorAgent } from "./navigator.js";
 import { buildValidatorAgent } from "./validator.js";
@@ -56,8 +57,8 @@ export class OrchestratorAgent extends BaseAgent {
     } catch (e) {
       // Validator may crash (e.g., LLM calls a tool not in its toolset).
       // Log and continue so the reporter phase still runs and we get a result.
-      console.warn(
-        `  \x1b[33m[Validator error: ${(e as Error).message}] -- continuing to reporter\x1b[0m`,
+      log.warn(
+        `[Validator error: ${(e as Error).message}] -- continuing to reporter`,
       );
       ctx.session.state["validation_result"] =
         `VALIDATOR_ERROR: ${(e as Error).message}`;
@@ -81,8 +82,8 @@ export class OrchestratorAgent extends BaseAgent {
           yield event;
         }
       } catch (e) {
-        console.warn(
-          `  \x1b[33m[Evaluator error: ${(e as Error).message}] -- continuing to reporter\x1b[0m`,
+        log.warn(
+          `[Evaluator error: ${(e as Error).message}] -- continuing to reporter`,
         );
       }
     }
@@ -98,9 +99,7 @@ export class OrchestratorAgent extends BaseAgent {
     } catch (e) {
       // Reporter may crash (e.g., LLM calls a tool not in its toolset).
       // Log and continue so we still get partial results.
-      console.warn(
-        `  \x1b[33m[Reporter error: ${(e as Error).message}] -- continuing\x1b[0m`,
-      );
+      log.warn(`[Reporter error: ${(e as Error).message}] -- continuing`);
       if (!ctx.session.state["final_report"]) {
         ctx.session.state["final_report"] =
           `REPORTER_ERROR: ${(e as Error).message}`;
