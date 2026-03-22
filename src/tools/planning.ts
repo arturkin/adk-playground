@@ -78,12 +78,8 @@ export const saveTestPlanTool = new FunctionTool({
         }),
       )
       .describe("Numbered test steps"),
-    expectedOutcome: z
-      .string()
-      .describe("What should happen when test passes"),
-    assertions: z
-      .array(z.string())
-      .describe("Final assertions to validate"),
+    expectedOutcome: z.string().describe("What should happen when test passes"),
+    assertions: z.array(z.string()).describe("Final assertions to validate"),
   }),
   execute: async (params) => {
     const markdown = formatTestMarkdown(params);

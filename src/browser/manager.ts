@@ -5,6 +5,7 @@ import {
   type Page,
 } from "playwright";
 import type { ViewportConfig } from "../types/browser.js";
+import { USER_AGENT } from "../env.js";
 import { resetSnapshotTracking } from "./accessibility.js";
 
 export type { Browser, BrowserContext, Page } from "playwright";
@@ -64,7 +65,7 @@ export class BrowserManager {
         width: this.viewport.width,
         height: this.viewport.height,
       },
-      userAgent: "Travelshift/QA",
+      userAgent: USER_AGENT ?? "Travelshift/QA",
     });
 
     // Single-tab enforcement: when a new page opens, close the old one and track the new one
@@ -114,7 +115,7 @@ export class BrowserManager {
               width: this.viewport.width,
               height: this.viewport.height,
             },
-            userAgent: "Travelshift/QA",
+            userAgent: USER_AGENT ?? "Travelshift/QA",
           });
 
     // Single-tab enforcement
@@ -129,9 +130,7 @@ export class BrowserManager {
     // Get existing page or create new one
     const pages = this.context.pages();
     this.page =
-      pages.length > 0
-        ? pages[pages.length - 1]
-        : await this.context.newPage();
+      pages.length > 0 ? pages[pages.length - 1] : await this.context.newPage();
 
     await this.page.setViewportSize({
       width: this.viewport.width,

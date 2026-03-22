@@ -3,6 +3,7 @@
 ## Current Dependency Versions (before update)
 
 ### Dependencies
+
 - `@google/adk`: 0.4.0
 - `@google/genai`: 1.44.0
 - `commander`: 14.0.3
@@ -12,6 +13,7 @@
 - `zod`: 3.25.76
 
 ### DevDependencies
+
 - `@google/adk-devtools`: 0.4.0
 - `@happy-dom/global-registrator`: ^20.8.3
 - `@types/bun`: ^1.3.10
@@ -29,6 +31,7 @@
 - `typescript`: 5.9.3
 
 ## Key Files
+
 - `package.json` — dependency declarations
 - `bun.lock` — lock file
 - `tsconfig.json` — TypeScript config

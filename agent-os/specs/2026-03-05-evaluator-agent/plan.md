@@ -15,6 +15,7 @@ Add an evaluator agent that runs as **Phase 2.5** between the validator and repo
 3. The runner reads `evaluation_result` from session state and applies the override to the final status decision
 
 **Rubber-stamp patterns the evaluator LLM detects:**
+
 - All assertions passed with generic/boilerplate evidence ("the page shows the expected content")
 - Evidence text is nearly identical across all assertions
 - Evidence contradicts the passed=true verdict (subtle cases string matching misses)
@@ -26,10 +27,12 @@ The evaluator has no tools except `record_evaluation` and no screenshot access �
 ## Files
 
 ### New files
+
 - `src/agents/evaluator.ts` — `buildEvaluatorAgent(config)`
 - (tool added to existing `src/tools/reporting.ts`)
 
 ### Modified files
+
 - `src/tools/reporting.ts` — add `recordEvaluationTool`
 - `src/agents/orchestrator.ts` — add evaluator as Phase 2.5, register in `subAgents`
 - `src/agents/index.ts` — export `buildEvaluatorAgent`
@@ -41,6 +44,7 @@ The evaluator has no tools except `record_evaluation` and no screenshot access �
 ## Task 1: Save spec documentation
 
 Create `agent-os/specs/2026-03-05-evaluator-agent/` with:
+
 - `plan.md` — this plan
 - `shape.md` — shaping notes
 - `references.md` — reference implementations
@@ -50,21 +54,34 @@ Create `agent-os/specs/2026-03-05-evaluator-agent/` with:
 ```typescript
 // Schema
 const evaluationParamsSchema = z.object({
-  confidence: z.number().min(0).max(100)
+  confidence: z
+    .number()
+    .min(0)
+    .max(100)
     .describe("Confidence 0–100 that the validator's verdict is correct"),
-  override: z.enum(["FAIL"]).nullable()
+  override: z
+    .enum(["FAIL"])
+    .nullable()
     .describe("Set to 'FAIL' to override a PASS verdict; null to accept"),
-  reason: z.string()
+  reason: z
+    .string()
     .describe("Explanation of confidence score and override rationale"),
 });
 
 export const recordEvaluationTool = new FunctionTool({
   name: "record_evaluation",
-  description: "Records the evaluator's confidence score and optional verdict override.",
+  description:
+    "Records the evaluator's confidence score and optional verdict override.",
   parameters: evaluationParamsSchema as any,
   execute: async ({ confidence, override, reason }: any, toolContext) => {
-    toolContext.state.set("evaluation_result", JSON.stringify({ confidence, override, reason }));
-    return { status: "success", message: `Evaluation recorded: confidence=${confidence}, override=${override ?? "none"}` };
+    toolContext.state.set(
+      "evaluation_result",
+      JSON.stringify({ confidence, override, reason }),
+    );
+    return {
+      status: "success",
+      message: `Evaluation recorded: confidence=${confidence}, override=${override ?? "none"}`,
+    };
   },
 });
 ```
@@ -174,7 +191,8 @@ Also add `EVALUATOR_THINKING_BUDGET` env var handling in `src/config/index.ts` (
 After reading session state, read `evaluation_result`:
 
 ```typescript
-const evaluationJson = (sessionDetails?.state?.["evaluation_result"] as string) || "";
+const evaluationJson =
+  (sessionDetails?.state?.["evaluation_result"] as string) || "";
 const evaluation = evaluationJson ? JSON.parse(evaluationJson) : null;
 ```
 
@@ -194,6 +212,7 @@ if (evaluation && evaluation.confidence < 50 && status === "passed") {
 ```
 
 Add `evaluationResult` to the `TestCaseResult` object:
+
 ```typescript
 evaluationResult: evaluation ? { confidence: evaluation.confidence, override: evaluation.override, reason: evaluation.reason } : undefined,
 ```
@@ -201,14 +220,17 @@ evaluationResult: evaluation ? { confidence: evaluation.confidence, override: ev
 ## Task 7: Update types and formatter
 
 **`src/types/report.ts`** — add to `TestCaseResult`:
+
 ```typescript
 evaluationResult?: { confidence: number; override: string | null; reason: string };
 ```
 
 **`src/reports/formatter.ts`** — add evaluator row to per-test section (after assertions table):
+
 ```
 **Evaluator**: confidence=85/100 — "Evidence is specific and matches page content"
 ```
+
 Or when override: `**Evaluator**: ⚠ OVERRIDE FAIL (confidence=35/100) — "All assertions have identical boilerplate evidence"`
 
 ## Verification

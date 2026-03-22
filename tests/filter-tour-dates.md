@@ -33,9 +33,9 @@
 Search results page loads and displays Tour card filtered by selected criteria.
 
 ## Assertions
+
 - [ ] Dates are set in the search widget
 - [ ] Search results page is displayed
 - [ ] Several Tour Cards are visible
 - [ ] Requested filters are applied, check filters panel to see if they are applied
 - [ ] Fail the test if one of the requested filters was not applied
-

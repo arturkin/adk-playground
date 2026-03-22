@@ -3,6 +3,7 @@
 ## Scope
 
 Adopt three new Playwright 1.58 features into ADK-QA:
+
 1. **Incremental snapshots** — use `_snapshotForAI({ track: "response" })` to send only accessibility tree diffs after the first Navigator iteration, reducing token cost
 2. **Test generator command** — adapt Playwright's planner agent concept into a `generate` CLI command that explores a URL and produces markdown test files in our native format
 3. **CDP connection with isLocal** — add `connectOverCDP()` support to BrowserManager for connecting to existing browser instances with file-system optimizations

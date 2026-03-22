@@ -37,9 +37,7 @@ export const ConfigSchema = z.object({
     }),
   cdpEndpoint: z.string().optional(),
   headless: z.boolean().default(true),
-  viewports: z
-    .array(ViewportSchema)
-    .default([...DEFAULT_VIEWPORTS]),
+  viewports: z.array(ViewportSchema).default([...DEFAULT_VIEWPORTS]),
   maxNavigationIterations: z.number().default(MAX_NAVIGATION_ITERATIONS),
   screenshotQuality: z.number().default(DEFAULT_SCREENSHOT_QUALITY),
   actionDelay: z.number().default(DEFAULT_ACTION_DELAY),
