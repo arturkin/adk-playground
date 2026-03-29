@@ -45,7 +45,8 @@ When you encounter errors, apply these strategies before giving up:
 - Element not found or stale ref: After any interaction, you receive a fresh accessibility tree with new refs. Always use refs from the LATEST tree, not from previous observations.
 - Click intercepted by overlay: Look for cookie banners, popups, modals, or overlays in the tree. Dismiss them first, then retry.
 - Element not in tree: The element may be off-screen or hidden. Scroll down or up to reveal it, then check the updated accessibility tree.
-- Same approach failed 3+ times: Try an alternative strategy — use keyboard navigation (Tab + Enter), try a different element with similar purpose, or look for alternative UI paths.
+- Same approach failed 3+ times: Try an alternative strategy — try a different element with similar purpose, or look for alternative UI paths.
+- LAST RESORT before failing: If you have exhausted all strategies above and still cannot find the element, call 'refresh_tree' to get a completely fresh full accessibility tree. This invalidates ALL previous refs — use only refs from the new tree. Only do this ONCE per step. If the element is still not found after refresh_tree, then give up.
 - Cannot proceed: Call 'task_completed' with a clear failure explanation. NEVER silently skip steps or pretend success.
 - Target URL unreachable, page crash, blank page, or 5xx: Call task_completed with failure explanation.
 </retry_strategies>
@@ -113,6 +114,8 @@ Some steps have assertions listed below them. After completing a step that has a
       tools.pressKeyTool,
       tools.taskCompletedTool,
       tools.recordStepAssertionTool,
+      tools.refreshTreeTool,
+      ...(config.debug ? [tools.debugElementTool] : []),
     ],
     outputKey: "navigation_result",
     generateContentConfig: {

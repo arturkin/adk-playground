@@ -129,6 +129,17 @@ export const pressKeyTool = new FunctionTool({
   parameters: pressKeyParamsSchema as never,
   execute: async ({ key }: { key: string }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
+
+    const taskSteps =
+      (toolContext.state.get("task_steps") as string | undefined) ?? "";
+    if (!/\b(key|keyboard|tab|enter|escape|press|hotkey)\b/i.test(taskSteps)) {
+      return {
+        status: "blocked",
+        message:
+          "Key press blocked: no test step mentions keyboard interaction. Use click_element or type_element to interact with elements instead.",
+      };
+    }
+
     try {
       await pressKey(key);
       const elementCount = await captureBrowserState(toolContext);

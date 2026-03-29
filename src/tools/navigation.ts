@@ -19,13 +19,13 @@ export const navigateTool = new FunctionTool({
       | string
       | undefined;
     if (currentUrl) {
-      const normalize = (u: string) =>
-        u.replace(/\/+$/, "").replace(/#.*$/, "");
-      if (normalize(currentUrl) === normalize(url)) {
+      const taskSteps =
+        (toolContext.state.get("task_steps") as string | undefined) ?? "";
+      if (!/\b(navigate|go to|open|visit|url)\b/i.test(taskSteps)) {
         return {
           status: "blocked",
           message:
-            "Navigation blocked: you are already on this page. Refreshing is not allowed. Use the existing accessibility tree to find the element you need.",
+            "Navigation blocked: no test step mentions navigating to a URL. You already navigated to the initial page. Use the existing accessibility tree to complete the remaining steps.",
         };
       }
     }
