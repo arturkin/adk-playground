@@ -29,7 +29,7 @@ interface LlmResponseData extends TestData {
 }
 
 function buildPrompt(input: ConversionInput): string {
-  return `You are a QA test planner. Convert this Playwright recording into a structured test specification.
+  return `TASK: Convert this Playwright recording into a structured test specification.
 
 PLAYWRIGHT RECORDING:
 ${input.playwrightCode}
@@ -54,8 +54,7 @@ Return a JSON object with EXACTLY this structure (no markdown fences, just raw J
   "questions": null
 }
 
-## CRITICAL: NO SELECTORS OR TECHNICAL IDENTIFIERS
-
+<forbidden_patterns>
 The test runner is an AI agent that navigates using visual accessibility snapshots — it has NO access to CSS selectors, IDs, classes, or XPath. Steps must describe what a human sees on screen, not how a developer would target an element in code.
 
 FORBIDDEN in steps (causes test failure):
@@ -64,10 +63,12 @@ FORBIDDEN in steps (causes test failure):
 - Any reference to HTML attributes, class names, or DOM structure
 
 REQUIRED: Describe elements by their VISIBLE LABEL, PURPOSE, or POSITION as a user would see them.
+</forbidden_patterns>
 
-## STYLE GUIDE: Match this writing style exactly
+<step_style_guide>
+Match this writing style exactly:
 
-Good step examples from existing tests in this codebase:
+Good step examples:
 - "Locate search widget"
 - "In search widget, locate date picker with label 'Select dates' and click on the starting date"
 - "Interact with 'Choose experience' input field and pick 'Sightseeing'"
@@ -81,23 +82,26 @@ Bad step examples (DO NOT write like this):
 - "Fill locator('#departure').with('NYC')" (code)
 - "Click .search-widget .date-picker" (selector)
 - "Click getByTestId('submit-btn')" (locator API)
+</step_style_guide>
 
-## GROUPING ACTIONS
+<conditional_logic>
+- Group related micro-actions into one meaningful step:
+  - Multiple clicks/types on the same field = one step
+  - "click input → type text → press Enter" = "Type 'X' in the Y field and submit"
+  - "click dropdown → click option" = "Select 'X' from the Y dropdown"
+- Include inline assertions (step.assertions) when a visible state change is expected after the step.
+- Final assertions describe the end state of the page.
+- If an element's purpose is unclear from the Playwright code, add a question asking what it is.
+- Set "questions" to null if everything is clear.
+- Tags: lowercase, feature area (e.g. "search", "navigation", "checkout", "filters").
+- Priority: "critical" for core conversion flows, "high" for important features, "medium" for standard.
+</conditional_logic>
 
-Group related micro-actions into one meaningful step:
-- Multiple clicks/types on the same field = one step
-- "click input → type text → press Enter" = "Type 'X' in the Y field and submit"
-- "click dropdown → click option" = "Select 'X' from the Y dropdown"
-
-## RULES
-
-- Steps describe what to visually look for and what to do — as a human would explain it
-- Include inline assertions (step.assertions) when a visible state change is expected after the step
-- Final assertions describe the end state of the page
-- If an element's purpose is unclear from the Playwright code, add a question asking what it is
-- Set "questions" to null if everything is clear
-- Tags: lowercase, feature area (e.g. "search", "navigation", "checkout", "filters")
-- Priority: "critical" for core conversion flows, "high" for important features, "medium" for standard`;
+<error_handling>
+- If the Playwright recording is empty or unparseable → return a valid JSON with title "ERROR", empty steps, and a question explaining the issue.
+- If recording contains only navigation with no interactions → produce a single step for navigation and note in questions.
+- If recording references elements with no visible label → add a question asking what the element is.
+</error_handling>`;
 }
 
 function stripMarkdownFences(text: string): string {
@@ -225,7 +229,8 @@ The user has provided answers to your questions:
 ${answers}
 
 Please revise your test specification with these answers incorporated.
-Return the same JSON format with questions: null (since all questions are answered).`;
+Return the same JSON format with questions: null (since all questions are answered).
+If a user answer contradicts the recording, prefer the user answer.`;
 
   const rawText = await generateContent(genai, model, prompt);
   const parsedData = await parseWithRetry(genai, model, rawText, prompt);

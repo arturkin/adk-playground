@@ -11,20 +11,21 @@
 
 1. Locate search widget
 2. In search widget, locate "Select flights" label
-3. Click flying from field, type New York, click on the field. Wait for the pop up to open and click on the list item in a popup
-   - [ ] Make sure origin set as NY
-4. Click flying to field, type Reykjavik,click on the field. Wait for the pop up to open and click on the list item in a popup
-   - [ ] Make sure destination set as Reykjavik
+3. Click flying from field, type New York, click on the field. Wait for the pop up to open and click on the 'new york, the united states' list item in a popup
+   - [ ] Make sure origin set as 'New york, the united states'
+4. Click flying to field, type Reykjavik, click on the field. Wait for the pop up to open and click on the 'Keflavik' list item in a popup
+   - [ ] Make sure destination set as 'Keflavik International'
 5. In search widget, locate date picker with label "Select travel dates" and click on the starting date.
 6. Locate a date picker pop up
    - [ ] Date picker popup is visible
-7. Choose randon dates few months in advance
-8. Press search now button
+7. Press next button to switch to the next month, it's a button with id '#nextMonth'
+8. Choose random dates few months in advance. Never select first active date in current month, never select same date from and to.
+9. Press search now button
    - [ ] Search results page is loaded
    - [ ] At least one Flight Card is visible
-9. On the left top side of the page, locate Choose class "Econ..." button press it and choose Business
+10. On the left top side of the page, locate Choose class "Econ..." button press it and choose Business
    - [ ] Make sure business is selected
-10. Press search and validate that flights on the page are business class flights
+11. Press search and validate that flights on the page are business class flights
 
 ## Expected Outcome
 

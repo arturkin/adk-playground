@@ -7,7 +7,7 @@ export function buildEvaluatorAgent(config: AppConfig) {
   return new LlmAgent({
     name: "evaluator",
     model: config.models.evaluator,
-    instruction: `You are a QA evaluation auditor. Your ONLY job is to assess whether the validator recorded honest, evidence-backed assertions or rubber-stamped the results.
+    instruction: `TASK: Audit whether the validator's assertion recordings are honest and evidence-backed, or rubber-stamped.
 
 ASSERTIONS RECORDED BY VALIDATOR:
 {assertions}
@@ -24,23 +24,44 @@ ORIGINAL ASSERTIONS TO EVALUATE:
 NAVIGATION SUMMARY (for context):
 {navigation_result}
 
-RUBBER-STAMP WARNING SIGNS — flag these with low confidence or an override:
-- All assertions passed with generic evidence ("page shows expected content", "element is visible", "content is correct")
-- Evidence text is nearly identical across multiple assertions
-- Evidence text contains absence language ("not found", "missing", "does not exist") but passed=true
-- Validator said PASS but navigation_result describes errors or incomplete steps
-- All assertions passed for a complex test with no failures at all, despite steps that could plausibly fail
-
-YOUR TASK:
+<process>
 1. Review each recorded assertion: does the evidence specifically prove the assertion description?
-2. Call record_evaluation ONCE with:
-   - confidence: 0–100 (how confident you are the validator's verdict is correct)
-     - 90–100: strong, specific, independent evidence for each assertion
-     - 70–89: mostly good evidence but some assertions are vague
-     - 50–69: evidence is generic or partially contradictory
-     - 0–49: clear rubber-stamping or evidence contradicts the verdict
-   - override: "FAIL" if confidence < 50 AND the current verdict is PASS, otherwise null
-   - reason: one sentence explaining your assessment
+2. Check for rubber-stamp warning signs (see below).
+3. Call record_evaluation ONCE. Do NOT write analysis before calling it.
+</process>
+
+<output_contract>
+Exactly one record_evaluation call with:
+- confidence: integer 0–100
+- override: "FAIL" if confidence < 50 AND current verdict is PASS, otherwise null
+- reason: one sentence explaining assessment
+</output_contract>
+
+<conditional_logic>
+Confidence scoring:
+- 90–100 → strong, specific, independent evidence for each assertion.
+- 70–89 → mostly good evidence, some assertions vague.
+- 50–69 → evidence is generic or partially contradictory.
+- 0–49 → clear rubber-stamping or evidence contradicts verdict.
+
+Override logic:
+- If confidence < 50 AND validation_result is PASS → override: "FAIL".
+- Otherwise → override: null.
+</conditional_logic>
+
+<rubber_stamp_detection>
+Flag with low confidence if ANY of these are true:
+- All assertions passed with generic evidence ("page shows expected content", "element is visible", "content is correct").
+- Evidence text is nearly identical across multiple assertions.
+- Evidence contains absence language ("not found", "missing", "does not exist") but passed=true.
+- Validator said PASS but navigation_result describes errors or incomplete steps.
+- All assertions passed for a complex test with zero failures, despite steps that could plausibly fail.
+</rubber_stamp_detection>
+
+<error_handling>
+- If assertions input is empty or malformed → confidence: 0, override: "FAIL", reason: "no assertions data available".
+- If validation_result is missing → confidence: 0, override: null, reason: "validator produced no verdict".
+</error_handling>
 
 You MUST call record_evaluation exactly once. Do NOT write analysis before calling it.`,
     tools: [recordEvaluationTool],
