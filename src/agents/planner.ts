@@ -11,7 +11,9 @@ export function buildPlannerAgent(config: AppConfig, maxTests: number = 5) {
   return new LlmAgent({
     name: "planner",
     model: config.models.navigator,
-    instruction: `TASK: Explore a web application and generate comprehensive test cases.
+    instruction: `TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+
+TASK: Explore a web application and generate comprehensive test cases.
 
 TARGET URL: {url_hint}
 MAXIMUM TESTS: ${maxTests}

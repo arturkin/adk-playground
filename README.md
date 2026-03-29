@@ -74,8 +74,55 @@ bun run test:auto
 # Run a specific test file
 bun start auto --test-file ./tests/search-car-rental.md
 
+# Run tests matching a name (partial, case-insensitive)
+bun start auto --test "flight"
+
 # Auto-apply test definition corrections (after 3+ consecutive failures)
 bun start auto --auto-fix
+```
+
+### Parallel Execution
+
+Run multiple tests concurrently using subprocess workers — each test gets its own isolated browser:
+
+```bash
+# Run all tests with 3 in parallel
+bun start auto --concurrency 3
+
+# Combine with other options
+bun start auto --concurrency 2 --auto-fix
+```
+
+Each worker's logs are captured and replayed as a contiguous block once the test completes, so output is never interleaved regardless of concurrency.
+
+### Sharding
+
+Run only a partition of the test suite — useful for splitting work across machines or CI jobs:
+
+```bash
+# Run the first third of tests
+bun start auto --shard 1/3
+
+# Run the second third
+bun start auto --shard 2/3
+
+# Combine with concurrency
+bun start auto --shard 1/2 --concurrency 3
+```
+
+Shards are contiguous chunks: `--shard 1/3` runs tests `[0..ceil(N/3)]`, `--shard 2/3` runs the next chunk, and so on.
+
+### Discover and Merge (CI helpers)
+
+```bash
+# List all test file paths as JSON (used by CI matrix)
+bun run test:discover
+
+# Produce N shard specs for a CI matrix (e.g. ["1/3","2/3","3/3"])
+bun run test:discover -- --shards 3
+
+# Merge per-shard JSON results into a single report
+bun run test:merge -- --results-dir artifacts/shard-inputs
 ```
 
 ## Writing Tests
@@ -117,6 +164,16 @@ Configuration is managed via environment variables and validated with Zod. See `
 - `EVALUATOR_MODEL`: LLM for evaluation (default: gemini-3-flash).
 
 All runtime artifacts (reports, run history, lessons) are written to `artifacts/` (gitignored). Directory paths and other constants are defined in `src/constants.ts`.
+
+## CI Pipeline
+
+The GitHub Actions workflow (`.github/workflows/qa.yml`) runs in three stages:
+
+1. **Discover** — scans the `tests/` directory and builds a matrix of shard specs (e.g. `["1/3","2/3","3/3"]`)
+2. **Test (matrix)** — each shard job runs its subset with `--concurrency 3`, uploading result JSON as an artifact
+3. **Merge** — downloads all shard artifacts, merges them into a single `TestRunResult`, generates the final report and writes the GitHub step summary
+
+This means all tests run in parallel across jobs, and within each job up to 3 tests run concurrently.
 
 ## GitHub Actions Secrets
 

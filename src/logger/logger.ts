@@ -1,11 +1,30 @@
 import type { LogLevel, LogContext, LogEntry, LogTransport } from "./types.js";
+import { BufferTransport } from "./transports/buffer.js";
 
 export class Logger {
   private transports: LogTransport[];
   private verbose = false;
+  private bufferTransport: BufferTransport | null = null;
 
   constructor(transports: LogTransport[]) {
     this.transports = transports;
+  }
+
+  /**
+   * Switches to buffer-only mode for subprocess workers.
+   * Replaces all transports with a BufferTransport so logs are captured
+   * in memory and can be included in the worker's JSON output.
+   */
+  setWorkerMode(): void {
+    this.bufferTransport = new BufferTransport();
+    this.transports = [this.bufferTransport];
+  }
+
+  /**
+   * Returns captured log entries (only populated after setWorkerMode() is called).
+   */
+  getBufferedLogs(): LogEntry[] {
+    return this.bufferTransport?.getEntries() ?? [];
   }
 
   setVerbose(value: boolean): void {

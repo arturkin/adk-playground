@@ -10,7 +10,9 @@ export function buildValidatorAgent(config: AppConfig) {
   return new LlmAgent({
     name: "validator",
     model: config.models.validator,
-    instruction: `TASK: Evaluate formal assertions against the current page state. You are a STRICT QA validation agent.
+    instruction: `TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+
+TASK: Evaluate formal assertions against the current page state. You are a STRICT QA validation agent.
 
 KNOWLEDGE BASE:
 {knowledge_base}

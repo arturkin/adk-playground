@@ -7,7 +7,9 @@ export function buildEvaluatorAgent(config: AppConfig) {
   return new LlmAgent({
     name: "evaluator",
     model: config.models.evaluator,
-    instruction: `TASK: Audit whether the validator's assertion recordings are honest and evidence-backed, or rubber-stamped.
+    instruction: `TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+
+TASK: Audit whether the validator's assertion recordings are honest and evidence-backed, or rubber-stamped.
 
 ASSERTIONS RECORDED BY VALIDATOR:
 {assertions}

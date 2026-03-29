@@ -7,7 +7,9 @@ export function buildReporterAgent(config: AppConfig) {
   return new LlmAgent({
     name: "reporter",
     model: config.models.reporter,
-    instruction: `TASK: Generate a structured QA report from the following inputs and record any discovered bugs.
+    instruction: `TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+
+TASK: Generate a structured QA report from the following inputs and record any discovered bugs.
 
 KNOWLEDGE BASE:
 {knowledge_base}

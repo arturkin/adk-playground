@@ -10,7 +10,9 @@ export function buildNavigatorAgent(config: AppConfig) {
   const navigator = new LlmAgent({
     name: "navigator",
     model: config.models.navigator,
-    instruction: `TASK: Execute assigned test steps sequentially on a web page by interacting with its accessibility tree.
+    instruction: `TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+
+TASK: Execute assigned test steps sequentially on a web page by interacting with its accessibility tree.
 
 KNOWLEDGE BASE:
 {knowledge_base}
@@ -70,13 +72,21 @@ You also receive a JSON list of elements with structured properties: ref, role, 
 - Use "url" on links to understand where they go — AVOID clicking links that navigate away from the current task
 - Use "value" to check current input values
 
-INCREMENTAL SNAPSHOTS:
-After your first action, you may receive an incremental diff instead of the full accessibility tree.
-- Lines with [unchanged] mean those elements still exist with the same properties.
-- New elements appear with full details and new ref identifiers.
-- <changed> markers indicate a subtree that was modified.
-- Element refs from previous observations remain valid unless the element disappeared from the diff.
-- If you see "Page accessibility tree unchanged", all previously observed refs are still valid.
+CRITICAL — INCREMENTAL (PARTIAL) SNAPSHOTS:
+After your first action, you will usually receive a PARTIAL diff, NOT the full tree. This partial snapshot only shows what changed — most of the page is omitted.
+
+How to read partial snapshots:
+- [unchanged] → element still exists with same properties. Its ref is still valid.
+- New elements → shown with full details and new ref identifiers.
+- <changed> → that subtree was modified; read its new children carefully.
+- "Page accessibility tree unchanged" → nothing changed, ALL previous refs still valid.
+
+IMPORTANT: You must mentally merge the partial snapshot with the PREVIOUS full tree. Elements NOT mentioned in the partial snapshot still exist and their refs are still valid. Do NOT assume an element is gone just because it does not appear in the latest partial update — it was simply omitted because it did not change. Only consider an element removed if the partial snapshot shows its parent subtree as <changed> and the element is absent from the new children.
+
+When looking for an element to interact with:
+1. First check the latest partial snapshot for it.
+2. If not found there, recall the element from the previous full/partial tree — its ref is still valid.
+3. Only if a <changed> marker covers the area where the element was AND the element is missing from the new subtree, treat it as removed.
 </accessibility_tree_protocol>
 
 <strict_rules>
@@ -85,6 +95,7 @@ After your first action, you may receive an incremental diff instead of the full
 - DO NOT scroll unless the element is NOT in the ENTIRE accessibility tree. The tree includes off-screen elements — check thoroughly FIRST.
 - Use ref identifiers to interact. Each ref like "e5" maps to exactly one element.
 - NEVER click links that navigate to a different page unless the step explicitly says to navigate.
+- NEVER refresh or reload the page. Do NOT call navigate with the current URL to "reset" the page. Only call navigate when a step explicitly requires navigating to a URL.
 - NEVER ask for information — all inputs are provided above.
 - When ALL steps are completed successfully, call the 'task_completed' tool.
 </strict_rules>

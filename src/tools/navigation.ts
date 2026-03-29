@@ -14,6 +14,22 @@ export const navigateTool = new FunctionTool({
   parameters: paramsSchema as never,
   execute: async ({ url }: { url: string }, toolContext) => {
     if (!toolContext) throw new Error("ToolContext is required");
+
+    const currentUrl = toolContext.state.get("current_url") as
+      | string
+      | undefined;
+    if (currentUrl) {
+      const normalize = (u: string) =>
+        u.replace(/\/+$/, "").replace(/#.*$/, "");
+      if (normalize(currentUrl) === normalize(url)) {
+        return {
+          status: "blocked",
+          message:
+            "Navigation blocked: you are already on this page. Refreshing is not allowed. Use the existing accessibility tree to find the element you need.",
+        };
+      }
+    }
+
     try {
       await navigateTo(url);
       toolContext.state.set("current_url", url);

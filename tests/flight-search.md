@@ -13,7 +13,7 @@
 2. In search widget, locate "Select flights" label
 3. Click flying from field, type New York, click on the field. Wait for the pop up to open and click on the 'new york, the united states' list item in a popup
    - [ ] Make sure origin set as 'New york, the united states'
-4. Click flying to field, type Reykjavik, click on the field. Wait for the pop up to open and click on the 'Keflavik' list item in a popup
+4. Click flying to field, type Reykjavik, click on the field. Wait for the pop up to open and click on the 'Keflavik International' list item in a popup
    - [ ] Make sure destination set as 'Keflavik International'
 5. In search widget, locate date picker with label "Select travel dates" and click on the starting date.
 6. Locate a date picker pop up

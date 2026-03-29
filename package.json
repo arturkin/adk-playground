@@ -8,6 +8,8 @@
     "run": "bun src/index.ts",
     "test:auto": "bun src/index.ts auto --test-dir ./tests",
     "test:auto:local": "HEADLESS=false bun src/index.ts auto --test-dir ./tests",
+    "test:discover": "bun src/tests/discover-cli.ts",
+    "test:merge": "bun src/tests/merge-results.ts",
     "dev": "npx adk web",
     "build": "tsc",
     "start": "node src/index.js",

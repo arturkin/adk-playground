@@ -9,8 +9,36 @@ on:
     - cron: "0 0 * * *" # Daily at midnight
 
 jobs:
-  test:
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.discover.outputs.shards }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Discover Tests and Build Shard Matrix
+        id: discover
+        run: |
+          SHARDS=$(bun src/tests/discover-cli.ts --shards 3)
+          echo "shards=$SHARDS" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: discover
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJson(needs.discover.outputs.shards) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +65,8 @@ jobs:
             qa-memory-${{ github.ref_name }}-
             qa-memory-main-
 
-      - name: Run Automated QA
-        run: bun run test:auto
+      - name: Run QA Shard ${{ matrix.shard }}
+        run: bun src/index.ts auto --shard "${{ matrix.shard }}" --concurrency 3
         env:
           GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -46,14 +74,85 @@ jobs:
           HEADLESS: "true"
           CI: "true"
 
-      - name: Upload Run History
+      - name: Upload Shard Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-shard-results-${{ strategy.job-index }}
+          path: artifacts/runs/*.json
+          if-no-files-found: warn
+
+      - name: Upload Shard Screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-shard-screenshots-${{ strategy.job-index }}
+          path: artifacts/runs/screenshots/
+          if-no-files-found: ignore
+
+  merge:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Download All Shard Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: qa-shard-results-*
+          path: shard-results/
+          merge-multiple: false
+
+      - name: Flatten Shard JSON Files
+        run: |
+          mkdir -p artifacts/shard-inputs
+          find shard-results/ -name "*.json" ! -name "latest.json" -exec cp {} artifacts/shard-inputs/ \;
+
+      - name: Restore QA Memory
+        uses: actions/cache@v4
+        with:
+          path: |
+            artifacts/lessons
+            artifacts/runs/latest.json
+          key: qa-memory-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            qa-memory-${{ github.ref_name }}-
+            qa-memory-main-
+
+      - name: Merge Results and Generate Report
+        run: bun src/tests/merge-results.ts --results-dir artifacts/shard-inputs
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          CI: "true"
+
+      - name: Save QA Memory
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            artifacts/lessons
+            artifacts/runs/latest.json
+          key: qa-memory-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload Final Run History
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: qa-run-history
           path: artifacts/runs/
 
-      - name: Upload Reports
+      - name: Upload Final Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:

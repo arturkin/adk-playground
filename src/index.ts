@@ -8,7 +8,7 @@ import { TEST_DIR } from "./constants.js";
 import { createRunner, buildPlannerAgent } from "./agents/index.js";
 import { getBrowserManager } from "./browser/index.js";
 import { discoverTests } from "./tests/discovery.js";
-import { runTestSuite } from "./tests/runner.js";
+import { runTestSuite, runTestSuiteParallel } from "./tests/runner.js";
 import { parseTestCase } from "./tests/parser.js";
 import {
   getFunctionCalls,
@@ -37,10 +37,40 @@ function requireApiKey(): void {
   }
 }
 
+/**
+ * Applies shard partitioning to a test suite.
+ * --shard 1/3 returns the first third of tests, --shard 2/3 the second, etc.
+ */
+function applySharding<T>(
+  items: T[],
+  shardSpec: string,
+): T[] {
+  const match = /^(\d+)\/(\d+)$/.exec(shardSpec);
+  if (!match) {
+    log.error(
+      `Invalid --shard format "${shardSpec}". Expected format: <index>/<total> (e.g. 1/3)`,
+    );
+    process.exit(1);
+  }
+  const index = parseInt(match[1], 10);
+  const total = parseInt(match[2], 10);
+  if (index < 1 || index > total) {
+    log.error(
+      `Invalid --shard "${shardSpec}": index must be between 1 and total`,
+    );
+    process.exit(1);
+  }
+  const chunkSize = Math.ceil(items.length / total);
+  const start = (index - 1) * chunkSize;
+  const end = Math.min(start + chunkSize, items.length);
+  return items.slice(start, end);
+}
+
 async function resolveTestSuite(options: {
   testFile?: string;
   test?: string;
   testDir: string;
+  shard?: string;
 }) {
   if (options.testFile) {
     log.info(`Running single test file: ${options.testFile}`);
@@ -73,7 +103,17 @@ async function resolveTestSuite(options: {
   }
 
   log.info(`Discovering tests in: ${options.testDir}`);
-  return discoverTests(options.testDir);
+  const suite = await discoverTests(options.testDir);
+
+  if (options.shard) {
+    const sharded = applySharding(suite.testCases, options.shard);
+    log.info(
+      `Shard ${options.shard}: running ${sharded.length}/${suite.testCases.length} test(s)`,
+    );
+    return { ...suite, testCases: sharded };
+  }
+
+  return suite;
 }
 
 function printRunSummary(
@@ -344,6 +384,15 @@ program
     "Show all debug output (clicked elements, tool calls, captures)",
     false,
   )
+  .option(
+    "--concurrency <n>",
+    "Number of tests to run in parallel (default: 1 = sequential)",
+    "1",
+  )
+  .option(
+    "--shard <index/total>",
+    "Run only a partition of tests, e.g. --shard 1/3 runs the first third",
+  )
   .action(async (options) => {
     requireApiKey();
     setVerbose(options.verbose);
@@ -366,10 +415,17 @@ program
 
     let exitCode = 0;
     try {
+      const concurrency = parseInt(options.concurrency ?? "1", 10);
       const latestRun = runStore.getLatestRun();
-      const runResult = await runTestSuite(suite, config, {
-        autoFix: options.autoFix,
-      });
+      const runResult =
+        concurrency > 1
+          ? await runTestSuiteParallel(suite, config, {
+              autoFix: options.autoFix,
+              concurrency,
+            })
+          : await runTestSuite(suite, config, {
+              autoFix: options.autoFix,
+            });
       runStore.saveRun(runResult);
 
       const regressionReport = detectRegressions(runResult, latestRun);

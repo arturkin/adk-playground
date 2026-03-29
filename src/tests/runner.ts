@@ -23,11 +23,71 @@ import {
 } from "../memory/lesson-formatter.js";
 import { loadKnowledgeBase } from "./discovery.js";
 import { getFunctionCalls, stringifyContent } from "@google/adk";
-import { execSync } from "child_process";
+import { execSync, spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
+import type { LogEntry } from "../logger/index.js";
+import type { WorkerResult } from "./worker.js";
 import { log } from "../logger/index.js";
 
 export interface RunOptions {
   autoFix?: boolean;
+  /** When true, lesson recording is skipped (used by parallel workers — the parent records lessons). */
+  skipLessons?: boolean;
+}
+
+/**
+ * Records failure lessons and applies corrections for a completed test case.
+ * Called by the parent process after collecting worker results in parallel mode,
+ * or inline by runTestCase in sequential mode.
+ */
+export function recordTestLessons(
+  testCase: TestCase,
+  result: TestCaseResult,
+  runId: string,
+  options: RunOptions = {},
+): void {
+  if (result.status === "failed" || result.status === "error") {
+    const prevConsecutiveCount = lessonStore.getConsecutiveFailureCount(
+      testCase.id,
+    );
+    const lesson = analyzeFailure(result, runId, prevConsecutiveCount);
+    lessonStore.addLesson(lesson);
+    log.info(
+      `[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})`,
+    );
+
+    const allLessons = lessonStore.getActiveLessons(testCase.id);
+    const corrections = testCorrectionManager.analyzeForCorrections(
+      testCase,
+      allLessons,
+    );
+
+    if (corrections.length > 0) {
+      log.info(
+        `[Test Corrections] ${corrections.length} suggestion(s) generated:`,
+      );
+      corrections.forEach((c) => {
+        log.info(`  - ${c.correctionType}: ${c.description}`);
+      });
+
+      if (options.autoFix) {
+        log.info("[Auto-Fix] Applying corrections...");
+        corrections.forEach((c) => {
+          try {
+            testCorrectionManager.applyCorrection(c);
+          } catch (e) {
+            log.error(`Failed to apply correction: ${(e as Error).message}`);
+          }
+        });
+      } else {
+        log.info("[Hint] Use --auto-fix to automatically apply corrections");
+      }
+    }
+  } else if (result.status === "passed") {
+    lessonStore.markResolved(testCase.id);
+    log.info("[Self-Correction] Previous failures resolved");
+  }
 }
 
 /**
@@ -329,48 +389,9 @@ export async function runTestCase(
       evaluationResult: evaluation as EvaluationResult | undefined,
     };
 
-    // Record lessons based on test outcome
-    if (status === "failed") {
-      const prevConsecutiveCount = lessonStore.getConsecutiveFailureCount(
-        testCase.id,
-      );
-      const lesson = analyzeFailure(testResult, runId, prevConsecutiveCount);
-      lessonStore.addLesson(lesson);
-      log.info(
-        `[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})`,
-      );
-
-      // Check for test definition corrections after threshold
-      const allLessons = lessonStore.getActiveLessons(testCase.id);
-      const corrections = testCorrectionManager.analyzeForCorrections(
-        testCase,
-        allLessons,
-      );
-
-      if (corrections.length > 0) {
-        log.info(
-          `[Test Corrections] ${corrections.length} suggestion(s) generated:`,
-        );
-        corrections.forEach((c) => {
-          log.info(`  - ${c.correctionType}: ${c.description}`);
-        });
-
-        if (options.autoFix) {
-          log.info("[Auto-Fix] Applying corrections...");
-          corrections.forEach((c) => {
-            try {
-              testCorrectionManager.applyCorrection(c);
-            } catch (e) {
-              log.error(`Failed to apply correction: ${(e as Error).message}`);
-            }
-          });
-        } else {
-          log.info("[Hint] Use --auto-fix to automatically apply corrections");
-        }
-      }
-    } else if (status === "passed") {
-      lessonStore.markResolved(testCase.id);
-      log.info("[Self-Correction] Previous failures resolved");
+    // Record lessons based on test outcome (skipped when parent handles it in parallel mode)
+    if (!options.skipLessons) {
+      recordTestLessons(testCase, testResult, runId, options);
     }
 
     return testResult;
@@ -390,41 +411,9 @@ export async function runTestCase(
       error: (error as Error).message,
     };
 
-    // Record lesson for error status
-    const prevConsecutiveCount = lessonStore.getConsecutiveFailureCount(
-      testCase.id,
-    );
-    const lesson = analyzeFailure(errorResult, runId, prevConsecutiveCount);
-    lessonStore.addLesson(lesson);
-    log.info(
-      `[Self-Correction] Failure lesson recorded (${lesson.failureCategory}, consecutive: ${lesson.consecutiveFailures})`,
-    );
-
-    // Check for corrections on error status too
-    const allLessons = lessonStore.getActiveLessons(testCase.id);
-    const corrections = testCorrectionManager.analyzeForCorrections(
-      testCase,
-      allLessons,
-    );
-
-    if (corrections.length > 0) {
-      log.info(
-        `[Test Corrections] ${corrections.length} suggestion(s) generated:`,
-      );
-      corrections.forEach((c) => {
-        log.info(`  - ${c.correctionType}: ${c.description}`);
-      });
-
-      if (options.autoFix) {
-        log.info("[Auto-Fix] Applying corrections...");
-        corrections.forEach((c) => {
-          try {
-            testCorrectionManager.applyCorrection(c);
-          } catch (e) {
-            log.error(`Failed to apply correction: ${(e as Error).message}`);
-          }
-        });
-      }
+    // Record lesson for error status (skipped when parent handles it in parallel mode)
+    if (!options.skipLessons) {
+      recordTestLessons(testCase, errorResult, runId, options);
     }
 
     return errorResult;
@@ -488,6 +477,229 @@ export async function runTestSuite(
       evaluator: config.models.evaluator,
     },
     results,
+    summary: {
+      total: suite.testCases.length,
+      passed,
+      failed,
+      inconclusive,
+      errors,
+      duration,
+    },
+  };
+}
+
+/**
+ * Replays a set of captured LogEntry objects through the parent's logger.
+ * Preserves group nesting based on the _groupDepth context attached by BufferTransport.
+ */
+function replayLogs(entries: LogEntry[], testTitle: string): void {
+  log.group(`Test: ${testTitle}`, async () => {
+    for (const entry of entries) {
+      if (entry.context?.["_groupStart"]) {
+        // groupStart entries are replayed inline — the group structure is
+        // already visible through indentation in the buffered output
+        log.info(entry.message);
+        continue;
+      }
+      const ctx = entry.context
+        ? Object.fromEntries(
+            Object.entries(entry.context).filter(
+              ([k]) => k !== "_groupDepth" && k !== "_groupStart",
+            ),
+          )
+        : undefined;
+      const safeCtx =
+        ctx && Object.keys(ctx).length > 0
+          ? (ctx as Record<string, string | number | boolean | undefined>)
+          : undefined;
+      if (entry.level === "error") log.error(entry.message, safeCtx);
+      else if (entry.level === "warn") log.warn(entry.message, safeCtx);
+      else if (entry.level === "debug") log.debug(entry.message, safeCtx);
+      else log.info(entry.message, safeCtx);
+    }
+  });
+}
+
+/**
+ * Runs a single test case in a subprocess worker and returns its result.
+ * The worker buffers its logs in memory and sends them in the JSON output;
+ * the parent replays them as a contiguous block through its own logger.
+ */
+function runWorker(
+  testCase: TestCase,
+  runId: string,
+  workerScript: string,
+  env: NodeJS.ProcessEnv,
+): Promise<TestCaseResult> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [workerScript, "--test-file", testCase.filePath, "--run-id", runId],
+      { env },
+    );
+
+    let stdoutData = "";
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdoutData += chunk.toString();
+    });
+
+    // Infra-level errors from the worker process itself (not test logs)
+    child.stderr.on("data", (chunk: Buffer) => {
+      process.stderr.write(chunk);
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0 && !stdoutData.trim()) {
+        reject(
+          new Error(
+            `Worker exited with code ${code} for test "${testCase.title}"`,
+          ),
+        );
+        return;
+      }
+
+      const lastLine = stdoutData.trim().split("\n").pop() ?? "";
+      try {
+        const workerResult = JSON.parse(lastLine) as WorkerResult;
+        replayLogs(workerResult.logs, testCase.title);
+        resolve(workerResult.result);
+      } catch {
+        reject(
+          new Error(
+            `Worker for "${testCase.title}" produced invalid JSON: ${lastLine.substring(0, 200)}`,
+          ),
+        );
+      }
+    });
+
+    child.on("error", (err) => {
+      reject(
+        new Error(
+          `Failed to spawn worker for "${testCase.title}": ${err.message}`,
+        ),
+      );
+    });
+  });
+}
+
+/**
+ * Executes a test suite with N tests running concurrently via subprocess workers.
+ * Worker logs are buffered and printed as contiguous blocks to prevent interleaving.
+ */
+export async function runTestSuiteParallel(
+  suite: TestSuite,
+  config: AppConfig,
+  options: RunOptions & { concurrency: number },
+): Promise<TestRunResult> {
+  const startTime = Date.now();
+  const runId = `run-${Date.now()}`;
+  const { concurrency } = options;
+
+  const workerScript = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "worker.ts",
+  );
+
+  const workerEnv: NodeJS.ProcessEnv = { ...process.env };
+
+  log.info(
+    `Running ${suite.testCases.length} tests with concurrency=${concurrency}`,
+  );
+
+  // Process tests in batches of `concurrency`
+  const allResults: TestCaseResult[] = [];
+  const testCases = [...suite.testCases];
+
+  while (testCases.length > 0) {
+    const batch = testCases.splice(0, concurrency);
+
+    const batchResults = await Promise.all(
+      batch.map(async (testCase) => {
+        try {
+          return await runWorker(testCase, runId, workerScript, workerEnv);
+        } catch (err) {
+          log.error(
+            `Worker failed for "${testCase.title}": ${(err as Error).message}`,
+          );
+          const errorResult: TestCaseResult = {
+            testId: testCase.id,
+            title: testCase.title,
+            status: "error",
+            statusReason: `Worker process error: ${(err as Error).message}`,
+            duration: 0,
+            bugs: [],
+            assertions: [],
+            screenshots: [],
+            agentOutput: "",
+            error: (err as Error).message,
+          };
+          return errorResult;
+        }
+      }),
+    );
+
+    // Retry inconclusive tests (one retry per test, sequentially to avoid pile-on)
+    const finalBatchResults: TestCaseResult[] = [];
+    for (let i = 0; i < batchResults.length; i++) {
+      let result = batchResults[i];
+      if (result.status === "inconclusive") {
+        log.warn(
+          `[Retry] Inconclusive result for "${batch[i].title}" — retrying once`,
+        );
+        try {
+          result = await runWorker(
+            batch[i],
+            runId,
+            workerScript,
+            workerEnv,
+          );
+        } catch (err) {
+          log.error(
+            `Retry worker failed for "${batch[i].title}": ${(err as Error).message}`,
+          );
+        }
+      }
+      finalBatchResults.push(result);
+    }
+
+    allResults.push(...finalBatchResults);
+  }
+
+  // Record lessons sequentially (avoids concurrent writes to lessons.json)
+  for (const result of allResults) {
+    const testCase = suite.testCases.find((tc) => tc.id === result.testId);
+    if (testCase) {
+      recordTestLessons(testCase, result, runId, options);
+    }
+  }
+
+  const duration = Date.now() - startTime;
+  const passed = allResults.filter((r) => r.status === "passed").length;
+  const failed = allResults.filter((r) => r.status === "failed").length;
+  const inconclusive = allResults.filter(
+    (r) => r.status === "inconclusive",
+  ).length;
+  const errors = allResults.filter((r) => r.status === "error").length;
+
+  let gitCommit: string | undefined;
+  try {
+    gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    // Ignore if not a git repo
+  }
+
+  return {
+    runId,
+    timestamp: new Date().toISOString(),
+    gitCommit,
+    modelConfig: {
+      navigator: config.models.navigator,
+      validator: config.models.validator,
+      reporter: config.models.reporter,
+      evaluator: config.models.evaluator,
+    },
+    results: allResults,
     summary: {
       total: suite.testCases.length,
       passed,
