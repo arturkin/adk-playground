@@ -57,13 +57,24 @@ const scrollParamsSchema = z.object({
 export const scrollTool = new FunctionTool({
   name: "scroll",
   description:
-    "Scrolls the page in a direction. Only use this if the element you need is NOT in the current element list.",
+    "Scrolls the page in a direction. Only allowed when the current test step explicitly requires scrolling.",
   parameters: scrollParamsSchema as never,
   execute: async (
     { direction }: { direction: "up" | "down" | "top" | "bottom" },
     toolContext,
   ) => {
     if (!toolContext) throw new Error("ToolContext is required");
+
+    const taskSteps =
+      (toolContext.state.get("task_steps") as string | undefined) ?? "";
+    if (!/scroll|swipe/i.test(taskSteps)) {
+      return {
+        status: "blocked",
+        message:
+          "Scroll blocked: no test step mentions scrolling. The accessibility tree already includes off-screen elements — use element refs from the tree instead of scrolling.",
+      };
+    }
+
     try {
       await scrollPage(direction);
       const elementCount = await captureBrowserState(toolContext);
